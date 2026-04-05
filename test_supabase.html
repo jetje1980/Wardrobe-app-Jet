@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Supabase Test</title></head>
+<body style="font-family:sans-serif;padding:20px;">
+<h2>Supabase Data Check</h2>
+<div id="result">Laden...</div>
+<script>
+const SUPABASE_URL = 'https://osuqtfsxmquwqsbgzlqn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zdXF0ZnN4bXF1d3FzYmd6bHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNzI0OTksImV4cCI6MjA5MDk0ODQ5OX0.E868cVw3-ClR3OQtJ4fCxmZGoUi1Dgx6pyGHBULZjeU';
+
+async function check() {
+  const res = document.getElementById('result');
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/griette_data?select=key,value', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const data = await r.json();
+    let html = '<p>Gevonden keys: ' + data.length + '</p>';
+    data.forEach(row => {
+      let val = row.value;
+      let info = '';
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) {
+          if (row.key === 'boards') {
+            info = parsed.map(b => b.id + ': ' + (b.outfits||[]).length + ' outfits').join(', ');
+          } else {
+            info = 'Array met ' + parsed.length + ' items';
+          }
+        } else {
+          info = JSON.stringify(parsed).substring(0, 100);
+        }
+      } catch(e) { info = String(val).substring(0, 100); }
+      html += '<p><strong>' + row.key + '</strong>: ' + info + '</p>';
+    });
+    res.innerHTML = html;
+  } catch(e) {
+    res.innerHTML = 'Fout: ' + e.message;
+  }
+}
+check();
+</script>
+</body>
+</html>
