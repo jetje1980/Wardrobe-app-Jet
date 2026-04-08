@@ -6516,10 +6516,11 @@ function openBoardSettings(boardId) {
     + '<div style="background:var(--white);border-radius:12px;padding:0 12px;border:1.5px solid var(--cream-dark);margin-bottom:16px;" id="bs-cat-counts">' + catCountHtml + '</div>'
 
     + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Must-have items</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:20px;" id="bs-items">' + itemGrid2 + '</div>';
-  + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-top:4px;margin-bottom:6px;">Niet meenemen</div>'
-  + '<p style="font-size:10px;color:var(--muted);margin-bottom:8px;">Items die je voor dit board uitsluit van de generator.</p>'
-  + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:20px;" id="bs-exclude">' + (function(){
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:20px;" id="bs-items">' + itemGrid2 + '</div>'
+
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-top:4px;margin-bottom:6px;">Niet meenemen</div>'
+    + '<p style="font-size:10px;color:var(--muted);margin-bottom:8px;">Items die je voor dit board uitsluit van de generator.</p>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:20px;" id="bs-exclude">' + (function(){
       var excIds = s.excludeItems||[];
       return getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); }).map(function(item){
         var excl = excIds.includes(item.id);
@@ -6533,6 +6534,25 @@ function openBoardSettings(boardId) {
           + '</div>';
       }).join('');
     })() + '</div>'
+
+  // Add exclude section dynamically
+  var excSection = document.createElement('div');
+  excSection.innerHTML = '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-top:4px;margin-bottom:6px;">Niet meenemen ✕</div>'
+    + '<p style="font-size:10px;color:var(--muted);margin-bottom:8px;">Items uitsluiten van de outfit-generator voor dit board.</p>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:20px;" id="bs-exclude">'
+    + getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); }).map(function(item){
+        var excl = (s.excludeItems||[]).includes(item.id);
+        var ph3 = photos[item.id] ? '<img src="' + photos[item.id] + '" style="width:100%;height:100%;object-fit:cover;">'
+          : '<span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;">' + item.name.split(' ')[0] + '</span>';
+        return '<div onclick="bsToggleExclude(this)" data-id="' + item.id + '" '
+          + 'style="border-radius:8px;cursor:pointer;position:relative;border:2px solid ' + (excl?'#b5232a':'var(--cream-dark)') + ';opacity:' + (excl?'0.55':'1') + ';">'
+          + '<div style="aspect-ratio:1;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;">' + ph3 + '</div>'
+          + '<div style="font-size:7px;color:var(--brown);text-align:center;padding:3px 2px;">' + (item.name.length>14?item.name.substring(0,13)+'…':item.name) + '</div>'
+          + (excl?'<div class="bs-excl" style="position:absolute;top:2px;right:2px;width:14px;height:14px;background:#b5232a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">✕</div>':'')
+          + '</div>';
+      }).join('')
+    + '</div>';
+  sheet.appendChild(excSection);
 
     + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;margin-top:4px;">Aantallen per categorie</div>'
     + '<p style="font-size:10px;color:var(--muted);margin-bottom:8px;">Vul in hoeveel je wil meenemen — stylist houdt er rekening mee.</p>'
