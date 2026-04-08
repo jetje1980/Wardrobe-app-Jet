@@ -2678,9 +2678,12 @@ async function loadAppDataFromSupabase() {
       saveSelfies(); // sync to localStorage
     }
     if (cloudPhotos) {
+      var photosBefore = Object.keys(photos).length;
       Object.assign(photos, cloudPhotos);
-      // sync to localStorage
       try { localStorage.setItem('griette-cloud-photos-v1', JSON.stringify(cloudPhotos)); } catch(e) {}
+      // Always rebuild garderobe after cloud photos so all photos appear
+      buildGarderobe();
+      buildBoards();
     }
 
     // Sync localStorage with Supabase data
@@ -3734,8 +3737,13 @@ function scoreCombo(top, bottom, shoes, bag, layer) {
   if (topColor === 'dark' && bottomColor === 'light') score += 4;
   if (topColor === 'light' && bottomColor === 'dark') score += 4;
   if (topColor === 'accent' && (bottomColor === 'dark' || bottomColor === 'light')) score += 3;
+  if (topColor === 'light' && bottomColor === 'accent') score += 3; // licht top + kleur bottom = spannend
   if (topColor === 'navy' && (bottomColor === 'light' || bottomColor === 'denim')) score += 3;
   if (topColor === bottomColor && topColor !== 'neutral') score -= 2;
+  // Bonus voor kleurcontrast: donker + accent samen
+  if (topColor === 'dark' && bottomColor === 'accent') score += 3;
+  if (topColor === 'accent' && bottomColor === 'accent') score -= 1; // twee accenten = te druk
+
 
   // Shoe match
   if (shoeColor === 'neutral') score += 2;
@@ -3834,6 +3842,17 @@ function scoreCombo(top, bottom, shoes, bag, layer) {
   [topKleur, bottomKleur].forEach(function(k) {
     if (k && likedColors[k]) score += Math.min(likedColors[k] * 0.8, 2.5);
   });
+
+  // Surprise/variety bonus
+  var accentKls2 = ['felroze','paars','geel','oranje-rood','lichtblauw','groen'];
+  var neutralKls2 = ['donkerblauw','bruin','zwart','gebroken-wit'];
+  if (accentKls2.includes(topKleur) && neutralKls2.includes(bottomKleur)) score += 2;
+  if (neutralKls2.includes(topKleur) && accentKls2.includes(bottomKleur)) score += 1.5;
+  // Rapport tone-sur-tone bonus
+  if (topKleur==='donkerblauw' && bottomKleur==='lichtblauw') score += 3;
+  if ((topKleur==='bruin'&&bottomKleur==='gebroken-wit')||(topKleur==='gebroken-wit'&&bottomKleur==='bruin')) score += 2.5;
+  // Penalize boring same-neutral repetition
+  if (neutralKls2.includes(topKleur) && topKleur===bottomKleur && topKleur!=='zwart') score -= 1.5;
 
   // Rapport-combo bonus (tag-based, from the 33 outfit examples)
   score += rapportComboBonus(top, bottom, layer);
@@ -6347,8 +6366,18 @@ async function generateBoardOutfitsWithCounts(boardId, counts, extra) {
     + '\n\nGEWENSTE AANTALLEN: Tops: ' + counts.tops + ' | Rokken/broeken: ' + counts.bottoms
     + ' | Jurken: ' + (counts.jurken||0) + ' | Laagjes: ' + counts.layers + ' | Schoenen: ' + counts.shoes
     + '\n\nGARDEROBE:\n' + wardrobeText
-    + '\n\nMaak ' + totalOutfits + ' complete dag-outfits. Gebruik items meerdere keren (capsule-principe).'
-    + '\nGeef ALLEEN een JSON array: [{"naam":"...","gelegenheid":"...","items":["exacte naam"],"tip":"..."}]';
+    + '\n\nMaak ' + totalOutfits + ' complete dag-outfits. Capsule-principe: items mogen meerdere keren.'
+    + '\n\nSTRIKTE REGELS:\n'
+    + '- Elke outfit heeft EXACT 3-4 items: 1 top/jurk + 1 rok/broek (of jurk alleen) + 1 schoen + optioneel 1 laagje/tas'
+    + '- Gebruik ALLEEN de exacte itemnamen zoals in de garderobe hierboven\n'
+    + '- Geen items verzinnen die er niet in staan\n'
+    + '- VARIEER: niet elke outfit hetzelfde silhouet of kleurcombo\n'
+    + '- Maak het SPANNEND: denk aan onverwachte kleurcombo\'s, contrast soepel+stevig, accessoire als eyecatcher\n'
+    + '- De tip is concreet: \'Stop de top in met een riem voor taille-effect\'\n\n'
+    + 'Geef ALLEEN een JSON array, geen tekst eromheen:\n'
+    + '[{"naam":"korte outfit naam","gelegenheid":"strand/diner/stad/casual",'
+    + '"items":["exacte naam top","exacte naam broek/rok","exacte naam schoenen"],'
+    + '"tip":"concrete stijltip"}]';
   try {
     var res = await fetch('https://griette-stylist.griette.workers.dev', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -6367,7 +6396,7 @@ async function generateBoardOutfitsWithCounts(boardId, counts, extra) {
     saveAllBtn.textContent = '+ Alles opslaan in ' + board.label + ' (' + outfits.length + ' outfits)';
     saveAllBtn.addEventListener('click', function() {
       outfits.forEach(function(sug,idx){
-        var mIds=(sug.items||[]).map(function(name){var f=allItems.find(function(i){return i.name.toLowerCase()===name.toLowerCase()||i.name.toLowerCase().includes(name.toLowerCase().substring(0,8));});return f?f.id:null;}).filter(Boolean);
+        var mIds=(sug.items||[]).map(function(name){var nl=name.toLowerCase().trim();var f=allItems.find(function(i){return i.name.toLowerCase()===nl;})||allItems.find(function(i){return i.name.toLowerCase().includes(nl);})||allItems.find(function(i){return nl.includes(i.name.toLowerCase().substring(0,10))&&i.name.length>6;});return f?f.id:null;}).filter(Boolean);
         if(mIds.length){outfitCounter++;board.outfits.push({id:'outfit-'+outfitCounter,name:sug.naam||'Look '+(idx+1),items:mIds});}
       });
       saveAppData(); showToast('\u2713 ' + outfits.length + ' outfits opgeslagen');
@@ -6375,14 +6404,14 @@ async function generateBoardOutfitsWithCounts(boardId, counts, extra) {
     });
     contentDiv.appendChild(saveAllBtn);
     outfits.forEach(function(sug,idx){
-      var matchedIds=(sug.items||[]).map(function(name){var f=allItems.find(function(i){return i.name.toLowerCase()===name.toLowerCase()||i.name.toLowerCase().includes(name.toLowerCase().substring(0,8));});return f?f.id:null;}).filter(Boolean);
+      var matchedIds=(sug.items||[]).map(function(name){var nl=name.toLowerCase().trim();var f=allItems.find(function(i){return i.name.toLowerCase()===nl;})||allItems.find(function(i){return i.name.toLowerCase().includes(nl);})||allItems.find(function(i){return nl.includes(i.name.toLowerCase().substring(0,10))&&i.name.length>6;});return f?f.id:null;}).filter(Boolean);
       var card=document.createElement('div');
       card.style.cssText='background:var(--white);border-radius:12px;padding:12px;margin-bottom:8px;border:1.5px solid var(--cream-dark);';
       var photoRow=matchedIds.slice(0,4).map(function(id){return '<div style="width:44px;height:54px;border-radius:7px;overflow:hidden;background:var(--cream-dark);flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+(photos[id]?'<img src="'+photos[id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);">'+getItemName(id).split(' ')[0]+'</span>')+'</div>';}).join('');
       var occ=sug.gelegenheid?'<span style="font-size:8px;color:var(--brown-warm);background:rgba(155,98,64,0.1);border-radius:6px;padding:2px 7px;margin-left:6px;">'+sug.gelegenheid+'</span>':'';
       card.innerHTML='<div style="display:flex;align-items:center;margin-bottom:8px;"><div style="font-family:Cormorant Garamond,serif;font-size:15px;color:var(--brown);">'+(sug.naam||'Look '+(idx+1))+'</div>'+occ+'</div>'
         +'<div style="display:flex;gap:5px;margin-bottom:6px;">'+photoRow+'</div>'
-        +'<div style="font-size:10px;color:var(--muted);margin-bottom:4px;">'+(sug.items||[]).join(' \u00b7 ')+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);margin-bottom:4px;">'+matchedIds.map(function(id){return getItemName(id);}).join(' \u00b7 ')+'</div>'
         +(sug.tip?'<div style="font-size:10px;color:var(--brown-warm);font-style:italic;">\u2756 '+sug.tip+'</div>':'');
       var sBtn=document.createElement('button');
       sBtn.style.cssText='width:100%;padding:7px;background:var(--brown);color:var(--cream);border:none;border-radius:8px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;margin-top:8px;';
@@ -6651,12 +6680,16 @@ async function generateBoardOutfits(boardId) {
   var outfitCount = Math.min(Math.ceil(days * 1.4), 12);
   var prompt = 'Je bent Griette\'s persoonlijke stylist. Haar DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille altijd benadrukken, nooit wijd+wijd, soepel+stevig = beste combo.\n\n'
     + 'TRIP: ' + board.label + ' | ' + days + ' dagen | Klimaat: ' + klimaat
+    + ' | Combineer ook items die je niet verwacht maar die werken. Varieer stijl, kleur en gelegenheid.'
     + (note ? ' | ' + note : '')
     + (favItems.length ? ' | Must-have: ' + favItems.join(', ') : '')
     + (bs.catCounts && Object.keys(bs.catCounts).length ? ' | Aantallen: ' + Object.entries(bs.catCounts).map(function(e){ return e[1]+'x '+e[0]; }).join(', ') : '')
     + '\n\nGARDEROBE: ' + wardrobeLines
     + '\n\nStel ' + outfitCount + ' complete outfits voor. Gebruik ALLEEN items uit de garderobe. Varieer per dag en gelegenheid.'
-    + '\nGeef ALLEEN een JSON array: [{"naam":"...","gelegenheid":"...","items":["exacte naam","exacte naam"],"tip":"..."}]';
+    + '\nSTRIKTE REGELS: Exact 3-4 items per outfit (top/jurk + rok/broek + schoen + optioneel laagje).\n'
+    + 'Gebruik ALLEEN exacte namen uit bovenstaande garderobe. Geen verzonnen items.\n'
+    + 'Maak het SPANNEND en VERRASSEND: kleurcontrast, soepel+stevig, eyecatcher.\n'
+    + 'Geef ALLEEN JSON: [{"naam":"...","gelegenheid":"...","items":["exacte naam","exacte naam","exacte schoenen"],"tip":"concrete stijltip"}]';
 
   try {
     var res = await fetch('https://griette-stylist.griette.workers.dev', {
