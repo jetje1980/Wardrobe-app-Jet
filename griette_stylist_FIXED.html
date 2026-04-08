@@ -363,6 +363,7 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
     <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('tops',this)">Tops</button>
     <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('bottoms',this)">Onderkleding</button>
     <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('layers',this)">Laagjes</button>
+    <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('jurken',this)">Jurken</button>
     <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('shoes',this)">Schoenen</button>
     <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('bags',this)">Tassen</button>
   </div>
@@ -376,6 +377,11 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
     <div id="daily-card-weather" style="text-align:right;">
       <div style="font-size:28px;" id="daily-weather-icon">👗</div>
     </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+    <button type="button" onclick="openWornTodayPicker()" style="width:100%;padding:11px 16px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:'Jost',sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">👗</span><span style="flex:1;text-align:left;">Wat heb ik vandaag gedragen?</span><span style="font-size:11px;color:var(--muted);">→</span></button>
+    <button type="button" onclick="showDailyInspirationTip()" style="width:100%;padding:11px 16px;background:linear-gradient(135deg,rgba(155,98,64,0.1),rgba(162,138,80,0.1));color:var(--brown);border:1.5px solid rgba(155,98,64,0.3);border-radius:12px;font-size:11px;font-family:'Jost',sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">✨</span><span style="flex:1;text-align:left;">Dagelijkse stijlinspiratie — wat speelt er nu?</span><span style="font-size:11px;color:var(--muted);">→</span></button>
   </div>
 
   <div id="garderobe-content"></div>
@@ -600,7 +606,8 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
     <select id="new-item-cat" onchange="updateNewItemTagVisibility()">
       <option value="tops">Tops</option>
       <option value="bottoms">Rokken & Broeken</option>
-      <option value="layers">Lagen & Jurken</option>
+      <option value="layers">Laagje / vest / jas</option>
+      <option value="jurken">Jurk</option>
       <option value="bags">Tassen</option>
       <option value="shoes">Schoenen</option>
       <option value="overig">Overig</option>
@@ -1216,6 +1223,21 @@ const defaultTags = {
 
 const itemTags = {}; // id → {hals, pasvorm, materiaal, kleur}
 
+// Structuur defaults for existing items
+const structuurDefaults = {
+  'bruin-spaghet':'soepel','blauw-spaghet':'soepel','roze-maxi':'soepel',
+  'bruin-maxi':'soepel','kanten-top':'soepel','hemdjurk':'soepel','bruin-jurk':'soepel',
+  'bruin-longsleeve':'soepel',
+  'wit-oversized':'stevig','wit-basic':'stevig','geel-shirt':'stevig','oranje-shirt':'stevig',
+  'gestreept':'stevig','blauwe-blouse':'stevig','zwart-peplum':'stevig','rood-rok':'stevig',
+  'witte-shorts':'stevig','lichtblauwe-shorts':'stevig','bruin-shorts':'stevig',
+  'adidas-broek':'stevig','cargo-jasje':'stevig','zwart-gilet':'stevig',
+  'paarse-cardigan':'gemengd','witte-cardigan':'gemengd','print-mini':'gemengd',
+};
+Object.entries(structuurDefaults).forEach(function(e) {
+  if (defaultTags[e[0]]) defaultTags[e[0]].structuur = e[1];
+});
+
 // Griette's color palette
 const basisKleuren = ['donkerblauw','bruin','zwart','gebroken-wit'];
 const accentKleuren = ['felroze','paars','geel','oranje-rood','lichtblauw','kobaltblauw','groen'];
@@ -1253,6 +1275,20 @@ function colorComboScore(kleur1, kleur2) {
 function getTag(itemId, type) {
   // User tag takes priority, fall back to default
   return itemTags[itemId]?.[type] ?? defaultTags[itemId]?.[type] ?? null;
+}
+
+function setTagMulti(itemId, type, value) {
+  if (!itemTags[itemId]) itemTags[itemId] = {};
+  var current = itemTags[itemId][type];
+  var arr = Array.isArray(current) ? current.slice() : (current ? [current] : []);
+  var idx = arr.indexOf(value);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+  if (arr.length === 0) { delete itemTags[itemId][type]; delete itemTags[itemId]['materialen']; }
+  else if (arr.length === 1) { itemTags[itemId][type] = arr[0]; delete itemTags[itemId]['materialen']; }
+  else { itemTags[itemId][type] = arr[0]; itemTags[itemId]['materialen'] = arr; }
+  saveAppData();
+  var tagEl = document.getElementById('tags-' + itemId);
+  if (tagEl) renderTagButtons(itemId, tagEl);
 }
 
 function getMaterialen(itemId) {
@@ -1300,151 +1336,57 @@ const kleurDots = {
 };
 
 function renderTagButtons(itemId, container) {
-  const cat = getAllItems().find(i => i.id === itemId)?.cat;
+  var cat = getAllItems().find(function(i){ return i.id === itemId; })?.cat;
   container.innerHTML = '';
-
-  const showHals = ['tops','layers'].includes(cat);
-  const showPasvorm = ['tops','bottoms','layers'].includes(cat);
-
-  // Helper to get current value (user override or default)
-  const val = (type) => getTag(itemId, type);
-
-  const kleurLbl = document.createElement('div');
-  kleurLbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-  kleurLbl.textContent = 'Kleur';
-  container.appendChild(kleurLbl);
-
-  const kleurRow = document.createElement('div');
-  kleurRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;';
-  [...basisKleuren, ...accentKleuren, ...vermijdKleuren].forEach(v => {
-    const b = document.createElement('button');
-    const isSelected = val('kleur') === v;
-    const dot = kleurDots[v] || '#999';
-    b.style.cssText = `display:flex;align-items:center;gap:3px;padding:2px 6px 2px 4px;border-radius:8px;font-size:7px;cursor:pointer;font-family:'Jost',sans-serif;border:1.5px solid ${isSelected ? dot : 'var(--cream-dark)'};background:${isSelected ? dot+'22' : 'var(--cream)'};color:var(--text);`;
-    b.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0;"></span>${v}`;
-    b.onclick = (e) => { e.stopPropagation(); setTag(itemId,'kleur',v); };
-    kleurRow.appendChild(b);
+  var showHals    = ['tops','layers','jurken'].includes(cat);
+  var showPasvorm = ['tops','bottoms','layers','jurken'].includes(cat);
+  var showMouw    = ['tops','layers','jurken'].includes(cat);
+  var showLengte  = ['tops','bottoms','layers','jurken'].includes(cat);
+  function val(type) { return getTag(itemId, type); }
+  function makeSection(lbl) {
+    var l=document.createElement('div');l.style.cssText='font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;margin-top:4px;';l.textContent=lbl;container.appendChild(l);
+    var r=document.createElement('div');r.style.cssText='display:flex;flex-wrap:wrap;gap:3px;margin-bottom:5px;';container.appendChild(r);return r;
+  }
+  function makeBtn(row,text,isSel,onClick) {
+    var b=document.createElement('button');
+    b.style.cssText='padding:2px 7px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid '+(isSel?'var(--brown-warm)':'var(--cream-dark)')+';font-family:Jost,sans-serif;background:'+(isSel?'var(--brown-warm)':'var(--cream)')+';color:'+(isSel?'white':'var(--muted)')+';font-weight:'+(isSel?'600':'400')+';';
+    b.textContent=text;b.addEventListener('click',function(e){e.stopPropagation();onClick();});row.appendChild(b);return b;
+  }
+  // KLEUR
+  var kleurRow=makeSection('Kleur');kleurRow.style.gap='4px';
+  [...basisKleuren,...accentKleuren,...vermijdKleuren].forEach(function(v){
+    var isSelected=val('kleur')===v;var dot=kleurDots[v]||'#999';
+    var b=document.createElement('button');
+    b.style.cssText='display:flex;align-items:center;gap:3px;padding:2px 6px 2px 4px;border-radius:8px;font-size:7px;cursor:pointer;font-family:Jost,sans-serif;border:1.5px solid '+(isSelected?dot:'var(--cream-dark)')+';background:'+(isSelected?dot+'22':'var(--cream)')+';color:var(--text);';
+    b.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+dot+';display:inline-block;flex-shrink:0;"></span>'+v;
+    b.addEventListener('click',function(e){e.stopPropagation();setTag(itemId,'kleur',v);});kleurRow.appendChild(b);
   });
-  container.appendChild(kleurRow);
-
-  if (showHals) {
-    const lbl = document.createElement('div');
-    lbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-    lbl.textContent = 'Hals';
-    container.appendChild(lbl);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;';
-    ['open','V-hals','boothals','gesloten'].forEach(v => {
-      const b = document.createElement('button');
-      const isSel = val('hals') === v;
-      b.style.cssText = `padding:2px 6px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid var(--cream-dark);font-family:'Jost',sans-serif;background:${isSel?'var(--brown-warm)':'var(--cream)'};color:${isSel?'white':'var(--muted)'};`;
-      b.textContent = v;
-      b.onclick = (e) => { e.stopPropagation(); setTag(itemId,'hals',v); };
-      row.appendChild(b);
-    });
-    container.appendChild(row);
+  // HALS
+  if(showHals){var r=makeSection('Hals');['ronde hals','V-hals','boothals','sweetheart','spaghetti','open knoopsluiting','gesloten/col'].forEach(function(v){makeBtn(r,v,val('hals')===v,function(){setTag(itemId,'hals',v);});});}
+  // PASVORM
+  if(showPasvorm){var r2=makeSection('Pasvorm');['aansluitend','licht oversized','wijd','cropped','gestructureerd'].forEach(function(v){makeBtn(r2,v,val('pasvorm')===v,function(){setTag(itemId,'pasvorm',v);});});}
+  // MOUW
+  if(showMouw){var r3=makeSection('Mouw');['mouwloos','kort','3/4','lang','raglan','pofmouw'].forEach(function(v){makeBtn(r3,v,val('mouw')===v,function(){setTag(itemId,'mouw',v);});});}
+  // MATERIAAL multi-select
+  var matLbl=document.createElement('div');matLbl.style.cssText='font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;margin-top:4px;';matLbl.textContent='Materiaal (meerdere)';container.appendChild(matLbl);
+  var matRow=document.createElement('div');matRow.style.cssText='display:flex;flex-wrap:wrap;gap:3px;margin-bottom:5px;';container.appendChild(matRow);
+  var curMats=getMaterialen(itemId);
+  function addMatGroup(lbl,items,color){
+    var gl=document.createElement('div');gl.style.cssText='width:100%;font-size:7px;color:var(--muted);font-style:italic;margin-top:3px;margin-bottom:1px;';gl.textContent=lbl;matRow.appendChild(gl);
+    items.forEach(function(v){var isSel=curMats.includes(v);var b=document.createElement('button');b.style.cssText='padding:2px 7px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid '+(isSel?color:'var(--cream-dark)')+';font-family:Jost,sans-serif;background:'+(isSel?'rgba(155,98,64,0.1)':'var(--cream)')+';color:'+(isSel?'var(--brown)':'var(--muted)')+';font-weight:'+(isSel?'600':'400')+';';b.textContent=v;b.addEventListener('click',function(e){e.stopPropagation();setTagMulti(itemId,'materiaal',v);});matRow.appendChild(b);});
   }
-
-  if (showPasvorm) {
-    var pasvLbl = document.createElement('div');
-    pasvLbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-    pasvLbl.textContent = 'Pasvorm';
-    container.appendChild(pasvLbl);
-    var pasvRow = document.createElement('div');
-    pasvRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;';
-    ['aansluitend','licht oversized','oversized','wijd','cropped','gestructureerd'].forEach(function(v) {
-      var b = document.createElement('button');
-      var isSel = val('pasvorm') === v;
-      b.style.cssText = 'padding:2px 6px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid var(--cream-dark);font-family:Jost,sans-serif;background:' + (isSel?'var(--brown-warm)':'var(--cream)') + ';color:' + (isSel?'white':'var(--muted)') + ';';
-      b.textContent = v;
-      b.addEventListener('click', function(e){ e.stopPropagation(); setTag(itemId,'pasvorm',v); });
-      pasvRow.appendChild(b);
-    });
-    container.appendChild(pasvRow);
-  }
-
-  // Mouw
-  if (['tops','layers','jurken'].includes(cat)) {
-    var mouwLbl = document.createElement('div');
-    mouwLbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-    mouwLbl.textContent = 'Mouw';
-    container.appendChild(mouwLbl);
-    var mouwRow = document.createElement('div');
-    mouwRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;';
-    ['mouwloos','kort','3/4','lang','raglan','pofmouw'].forEach(function(v) {
-      var b = document.createElement('button');
-      var isSel = val('mouw') === v;
-      b.style.cssText = 'padding:2px 6px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid var(--cream-dark);font-family:Jost,sans-serif;background:' + (isSel?'var(--brown-warm)':'var(--cream)') + ';color:' + (isSel?'white':'var(--muted)') + ';';
-      b.textContent = v;
-      b.addEventListener('click', function(e){ e.stopPropagation(); setTag(itemId,'mouw',v); });
-      mouwRow.appendChild(b);
-    });
-    container.appendChild(mouwRow);
-  }
-
-  // Lengte
-  if (['tops','layers','bottoms','jurken'].includes(cat)) {
-    var lenLbl = document.createElement('div');
-    lenLbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-    lenLbl.textContent = 'Lengte';
-    container.appendChild(lenLbl);
-    var lenRow = document.createElement('div');
-    lenRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;';
-    ['crop','normaal','lang/maxi'].forEach(function(v) {
-      var b = document.createElement('button');
-      var isSel = val('lengte') === v;
-      b.style.cssText = 'padding:2px 6px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid var(--cream-dark);font-family:Jost,sans-serif;background:' + (isSel?'var(--brown-warm)':'var(--cream)') + ';color:' + (isSel?'white':'var(--muted)') + ';';
-      b.textContent = v;
-      b.addEventListener('click', function(e){ e.stopPropagation(); setTag(itemId,'lengte',v); });
-      lenRow.appendChild(b);
-    });
-    container.appendChild(lenRow);
-  }
-
-  // Stofgewicht
-  var strLbl = document.createElement('div');
-  strLbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-  strLbl.textContent = 'Stofgewicht';
-  container.appendChild(strLbl);
-  var strRow = document.createElement('div');
-  strRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;';
-  [['luchtig','dunne jersey'],['medium','katoen, viscose'],['stevig','denim, wol, 250g+']].forEach(function(pair) {
-    var b = document.createElement('button');
-    var isSel = val('structuur') === pair[0];
-    b.style.cssText = 'padding:2px 6px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid var(--cream-dark);font-family:Jost,sans-serif;background:' + (isSel?'var(--brown-warm)':'var(--cream)') + ';color:' + (isSel?'white':'var(--muted)') + ';';
-    b.textContent = pair[0]; b.title = pair[1];
-    b.addEventListener('click', function(e){ e.stopPropagation(); setTag(itemId,'structuur',pair[0]); });
-    strRow.appendChild(b);
+  addMatGroup('soepel:',['viscose','tencel','modal','satijn','jersey','zijde'],'#a8c4e0');
+  addMatGroup('stevig:',['katoen','biologisch katoen','denim','wol','rib','linnen','tweed'],'var(--brown-warm)');
+  addMatGroup('zacht/gemengd:',['cashmere','merino','bamboe'],'var(--brown-warm)');
+  // STOFGEWICHT
+  var r4=makeSection('Stofgewicht');
+  [['luchtig','dunne jersey'],['medium','katoen, viscose'],['stevig','denim, 250g+ wol']].forEach(function(pair){
+    var isSel=val('structuur')===pair[0];var b=document.createElement('button');b.title=pair[1];
+    b.style.cssText='padding:2px 7px;border-radius:8px;font-size:7px;cursor:pointer;border:1px solid '+(isSel?'var(--brown-warm)':'var(--cream-dark)')+';font-family:Jost,sans-serif;background:'+(isSel?'var(--brown-warm)':'var(--cream)')+';color:'+(isSel?'white':'var(--muted)')+';';
+    b.textContent=pair[0];b.addEventListener('click',function(e){e.stopPropagation();setTag(itemId,'structuur',pair[0]);});r4.appendChild(b);
   });
-  container.appendChild(strRow);
-
-  // Materiaal multi-select
-  var matLbl = document.createElement('div');
-  matLbl.style.cssText = 'font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;';
-  matLbl.textContent = 'Materiaal (meerdere mogelijk)';
-  container.appendChild(matLbl);
-  var currentMats = getMaterialen(itemId);
-  [
-    {lbl:'soepel:', items:['viscose','tencel','modal','satijn','jersey']},
-    {lbl:'stevig:', items:['katoen','biologisch katoen','denim','wol','linnen','rib']},
-    {lbl:'gemengd:', items:['cashmere','merino','bamboe']}
-  ].forEach(function(grp) {
-    var gl = document.createElement('div');
-    gl.style.cssText = 'width:100%;font-size:7px;color:var(--muted);font-style:italic;margin-top:3px;margin-bottom:2px;';
-    gl.textContent = grp.lbl;
-    container.appendChild(gl);
-    var gr = document.createElement('div');
-    gr.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:2px;';
-    grp.items.forEach(function(v) {
-      var b = document.createElement('button');
-      var isSel = currentMats.includes(v);
-      b.style.cssText = 'padding:2px 6px;border-radius:8px;font-size:7px;cursor:pointer;font-family:Jost,sans-serif;border:1px solid var(--cream-dark);background:' + (isSel?'rgba(155,98,64,0.12)':'var(--cream)') + ';color:' + (isSel?'var(--brown)':'var(--muted)') + ';font-weight:' + (isSel?'600':'400') + ';';
-      b.textContent = v;
-      b.addEventListener('click', function(e){ e.stopPropagation(); setTagMulti(itemId,'materiaal',v); });
-      gr.appendChild(b);
-    });
-    container.appendChild(gr);
-  });
+  // LENGTE
+  if(showLengte){var r5=makeSection('Lengte');['crop','normaal','lang/maxi'].forEach(function(v){makeBtn(r5,v,val('lengte')===v,function(){setTag(itemId,'lengte',v);});});}
 }
 
 function buildItemCard(item) {
@@ -2183,6 +2125,14 @@ function showPanel(name, btn) {
   if (name === 'inspo') renderInspoGallery();
   if (name === 'chat') {
     setTimeout(function() {
+      // Show welcome if chat is empty
+      var chatCont = document.getElementById('chat-messages');
+      if (chatCont && chatCont.children.length === 0) {
+        var hr2 = new Date().getHours();
+        var gr2 = hr2 < 12 ? 'Goedemorgen' : hr2 < 17 ? 'Goedemiddag' : 'Goedenavond';
+        appendChatMessage('assistant', '❖ ' + gr2 + ' Griette! Ik ben je persoonlijke stylist. Ik ken je garderobe en stijlrapport volledig.\n\nStel een vraag over combinaties, een outfit voor vandaag, of advies voor een gelegenheid.');
+        chatInitialized = true;
+      }
       var inp = document.getElementById('chat-input');
       if (inp) inp.focus();
       // Image upload listener
@@ -2191,12 +2141,13 @@ function showPanel(name, btn) {
         imgInp._listenerAdded = true;
         imgInp.addEventListener('change', function() {
           var f = imgInp.files[0];
+          imgFile = f || null;
           var prev = document.getElementById('chat-img-preview');
           if (!prev) return;
           if (f) {
             prev.style.display = 'flex';
             prev.innerHTML = '📷 <strong>' + f.name.substring(0,20) + '</strong>'
-              + '<button onclick="document.getElementById(\'chat-img-input\').value=\'\';document.getElementById(\'chat-img-preview\').style.display=\'none\';" style="background:none;border:none;color:#b5232a;cursor:pointer;font-size:14px;padding:0 4px;">×</button>';
+              + '<button onclick="imgFile=null;document.getElementById(\'chat-img-input\').value=\'\';document.getElementById(\'chat-img-preview\').style.display=\'none\';" style="background:none;border:none;color:#b5232a;cursor:pointer;font-size:14px;padding:0 4px;">&times;</button>';
           } else {
             prev.style.display = 'none';
           }
@@ -3814,6 +3765,15 @@ function scoreCombo(top, bottom, shoes, bag, layer) {
   const topMat = getTag(top, 'materiaal');
   const bottomMat = getTag(bottom, 'materiaal');
 
+  // Material contrast scoring (rapport: soepel+stevig = diepte)
+  var topStr = getStructuurKlasse(top);
+  var bottomStr = getStructuurKlasse(bottom);
+  if (topStr && bottomStr) {
+    if ((topStr==='soepel'&&bottomStr==='stevig')||(topStr==='stevig'&&bottomStr==='soepel')) score += 4;
+    if (topStr==='soepel'&&bottomStr==='soepel') score -= 1;
+    if ((topStr==='gemengd'&&bottomStr==='stevig')||(topStr==='stevig'&&bottomStr==='gemengd')) score += 2;
+  }
+
   // Material contrast scoring (rapport: soepel + stevig = diepte)
   var soepelMats = ['viscose','tencel','modal','satijn','jersey','zijde','satin'];
   var stevigMats = ['denim','katoen','biologisch katoen','wol','ribstof','rib','tweed','linnen'];
@@ -5296,6 +5256,7 @@ fetchWeather();
 
 // Load Cloudinary photo URLs first (works across devices/versions)
 loadCloudinaryPhotos();
+loadBoardSettings();
 loadSelfies();
 loadInspoGallery();
 loadCustomOccasions();
@@ -6209,6 +6170,16 @@ function renderWornAllItems() {
   });
 }
 
+function removeFromWornLogDate(dateStr, itemId) {
+  if (!wornLog[dateStr]) return;
+  wornLog[dateStr] = wornLog[dateStr].filter(function(id){ return id !== itemId; });
+  if (wornLog[dateStr].length === 0) delete wornLog[dateStr];
+  saveWornLog();
+  // Refresh day detail if open
+  var overlay = document.getElementById('day-detail-overlay');
+  if (overlay) { overlay.remove(); showDayDetail(dateStr, parseInt(dateStr.split('-')[2])); }
+}
+
 function removeFromWornLog(itemId) {
   var today = todayStr();
   if (!wornLog[today]) return;
@@ -6518,6 +6489,22 @@ function openBoardSettings(boardId) {
     + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Must-have items</div>'
     + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:20px;" id="bs-items">' + itemGrid2 + '</div>';
 
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;margin-top:4px;">Aantallen per categorie</div>'
+    + '<p style="font-size:10px;color:var(--muted);margin-bottom:8px;">Vul in hoeveel je wil meenemen — stylist houdt er rekening mee.</p>'
+    + (function(){
+        var s2 = getBoardSettings(boardId);
+        var cats = [['tops','Tops'],['bottoms','Rokken & Broeken'],['layers','Laagjes'],['jurken','Jurken'],['shoes','Schoenen'],['bags','Tassen']];
+        return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">'
+          + cats.map(function(cat){
+              var saved = ((s2.catCounts||{})[cat[0]])||'';
+              return '<div style="background:var(--white);border-radius:8px;padding:8px 10px;border:1.5px solid var(--cream-dark);">'
+                + '<div style="font-size:9px;color:var(--muted);margin-bottom:4px;">'+cat[1]+'</div>'
+                + '<input type="number" data-cat="'+cat[0]+'" class="bs-cat-count" min="0" max="20" value="'+saved+'" placeholder="-" '
+                + 'style="width:100%;padding:5px;border:1px solid var(--cream-dark);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;text-align:center;">'
+                + '</div>';
+            }).join('') + '</div>';
+      })()
+
   var saveGenBtn = document.createElement('button');
   saveGenBtn.style.cssText = 'width:100%;padding:13px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:8px;';
   saveGenBtn.textContent = '❖ Opslaan & outfits genereren';
@@ -6633,6 +6620,7 @@ async function generateBoardOutfits(boardId) {
     + 'TRIP: ' + board.label + ' | ' + days + ' dagen | Klimaat: ' + klimaat
     + (note ? ' | ' + note : '')
     + (favItems.length ? ' | Must-have: ' + favItems.join(', ') : '')
+    + (bs.catCounts && Object.keys(bs.catCounts).length ? ' | Aantallen: ' + Object.entries(bs.catCounts).map(function(e){ return e[1]+'x '+e[0]; }).join(', ') : '')
     + '\n\nGARDEROBE: ' + wardrobeLines
     + '\n\nStel ' + outfitCount + ' complete outfits voor. Gebruik ALLEEN items uit de garderobe. Varieer per dag en gelegenheid.'
     + '\nGeef ALLEEN een JSON array: [{"naam":"...","gelegenheid":"...","items":["exacte naam","exacte naam"],"tip":"..."}]';
@@ -7232,6 +7220,7 @@ function initShopPanel() { /* shop panel is static HTML, nothing to init */ }
 // ============ CHAT WITH STYLIST ============
 var chatHistory = [];
 var chatInitialized = false;
+var imgFile = null; // attached image for next chat message
 
 function getChatSystemPrompt() {
   var allItems = getAllItems();
@@ -7437,6 +7426,9 @@ async function sendChat() {
       { type: 'text', text: userMsg || 'Wat zie je op deze foto? Geef stijladvies vanuit mijn DNA.' }
     ];
     appendChatMessage('user', '📷 ' + (userMsg || 'Foto gestuurd'));
+    imgFile = null;
+    var imgIn = document.getElementById('chat-img-input'); if(imgIn) imgIn.value='';
+    var prev = document.getElementById('chat-img-preview'); if(prev) prev.style.display='none';
   } else {
     msgContent = userMsg;
     appendChatMessage('user', userMsg);
