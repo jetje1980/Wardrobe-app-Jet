@@ -1810,8 +1810,15 @@ function renderOutfit(boardId, outfit) {
   delBtn.textContent = '🗑';
   delBtn.addEventListener('click', (function(bid,oid){ return function(){ deleteOutfit(bid,oid); }; })(boardId, outfit.id));
 
+  var copyBtn = document.createElement('button');
+  copyBtn.className = 'outfit-action-btn';
+  copyBtn.textContent = '↧';
+  copyBtn.title = 'Kopieer naar ander board';
+  copyBtn.addEventListener('click', (function(bid,oid){ return function(){ showCopyToBoardPicker(bid,oid); }; })(boardId, outfit.id));
+
   acts.appendChild(addItemBtn);
   acts.appendChild(selfieBtn);
+  acts.appendChild(copyBtn);
   acts.appendChild(delBtn);
   obHdr.appendChild(nameInput);
   obHdr.appendChild(acts);
@@ -7018,25 +7025,73 @@ async function generateOutfitFromAnchor(boardId, anchorId, anchorName) {
 }
 
 // ============ INSPO TIP → INSPIRATIE BOARD ============
-function saveInspoToBoard(tipText, itemIds) {
-  // Find or create inspiratie board
+async function saveInspoToBoard(tipText, itemIds) {
   var inspBoard = boards.find(function(b){ return b.id === 'inspiratie'; });
   if (!inspBoard) {
     inspBoard = {id:'inspiratie', label:'Inspiratie looks', emoji:'✨', outfits:[]};
     boards.unshift(inspBoard);
   }
+
+  // If no items provided, ask the stylist to match items from wardrobe to the trend
+  if (!itemIds || !itemIds.length) {
+    showToast('\u2756 Items zoeken voor deze look...');
+    try {
+      var allItems = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+      var wardrobeList = allItems.map(function(i){
+        var k=getTag(i.id,'kleur')||'';
+        return i.name+(k?' ['+k+']':'');
+      }).join(', ');
+
+      var matchPrompt = 'Je bent Griette\'s stylist. Haar DNA: klassiek casual, kleurrijk, vrouwelijk.\n\n'
+        + 'TREND TIP:\n' + tipText + '\n\n'
+        + 'GARDEROBE: ' + wardrobeList + '\n\n'
+        + 'Welke 3-4 items uit haar garderobe passen het beste bij deze trend? '
+        + 'Maak er een concrete outfit van.\n'
+        + 'Geef ALLEEN dit JSON: {"items":["exacte itemnaam","exacte itemnaam","exacte schoenen"],"naam":"outfit naam","tip":"stijltip"}';
+
+      var res = await fetch('https://griette-stylist.griette.workers.dev', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400, messages: [{role:'user',content:matchPrompt}] })
+      });
+      var data = await res.json();
+      var text = (data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+      var clean = text.replace(/^[^{]*/,'').replace(/[^}]*$/,'');
+      var parsed = JSON.parse(clean);
+
+      // Match item names to IDs
+      var allItemsArr = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+      itemIds = (parsed.items||[]).map(function(name){
+        var nl = name.toLowerCase().trim();
+        var f = allItemsArr.find(function(i){ return i.name.toLowerCase()===nl; })
+          || allItemsArr.reduce(function(best,i){
+              var words = i.name.toLowerCase().split(' ').filter(function(w){return w.length>3;});
+              var hits = words.filter(function(w){return nl.includes(w);}).length;
+              var score = words.length ? hits/words.length : 0;
+              return score>0.5&&score>(best?best.score:0)?{item:i,score:score}:best;
+            }, null);
+        if (f && f.item) f = f.item;
+        return f ? f.id : null;
+      }).filter(Boolean);
+
+      var naam = parsed.naam || ('Inspo ' + new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short'}));
+      var note = (parsed.tip ? parsed.tip + '\n\n' : '') + (tipText || '');
+
+      outfitCounter++;
+      inspBoard.outfits.push({ id:'outfit-'+outfitCounter, name:naam, items:itemIds, note:note });
+      saveAppData(); buildBoards(); activeBoardId='inspiratie';
+      showToast('\u2756 Opgeslagen in Inspiratie board');
+      return;
+    } catch(err) {
+      // fallback: save without items
+    }
+  }
+
+  // Fallback: save as-is
   outfitCounter++;
-  var naam = 'Inspo ' + new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short'});
-  inspBoard.outfits.push({
-    id: 'outfit-' + outfitCounter,
-    name: naam,
-    items: itemIds || [],
-    note: tipText || ''
-  });
-  saveAppData();
-  buildBoards();
-  activeBoardId = 'inspiratie';
-  showToast('❖ Opgeslagen in Inspiratie board');
+  var naam2 = 'Inspo ' + new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short'});
+  inspBoard.outfits.push({ id:'outfit-'+outfitCounter, name:naam2, items:itemIds||[], note:tipText||'' });
+  saveAppData(); buildBoards(); activeBoardId='inspiratie';
+  showToast('\u2756 Opgeslagen in Inspiratie board');
 }
 
 // ============ OUTFIT FROM ANCHOR ITEM ============
@@ -7112,7 +7167,7 @@ function showCopyToBoardPicker(fromBoardId, outfitId) {
     btn.addEventListener('click', function() {
       var copy = JSON.parse(JSON.stringify(outfit));
       copy.id = 'outfit-' + Date.now();
-      b.outfits.push(copy); saveAppData(); overlay.remove();
+      b.outfits.push(copy); saveAppData(); buildBoards(); activeBoardId=b.id; overlay.remove();
       showToast('✓ Gekopieerd naar ' + b.label);
     });
     list.appendChild(btn);
