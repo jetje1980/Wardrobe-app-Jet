@@ -349,6 +349,9 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
   <button type="button" onclick="closeMeerSheet();publishToGitHub();" style="width:100%;padding:14px;background:var(--brown);color:var(--cream);border:none;border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
     🚀 Publiceer update — sla app op naar GitHub
   </button>
+  <button type="button" onclick="closeMeerSheet();reuploadAllPhotos();" style="width:100%;padding:14px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--brown);">
+    📤 Foto’s synchroniseren
+  </button>
 </div>
 
 <!-- ===== GARDEROBE ===== -->
@@ -6057,6 +6060,57 @@ function editWornLogForDate(dateStr, dayNum) {
 }
 
 // ============ PUBLISH TO GITHUB ============
+// ============ RE-UPLOAD LOCAL PHOTOS ============
+async function reuploadAllPhotos() {
+  var cloudMap = {};
+  try { var s = localStorage.getItem('griette-cloud-photos-v1'); if(s) cloudMap=JSON.parse(s); } catch(e) {}
+  var allItems = getAllItems();
+  var toUpload = allItems.filter(function(i){ return photos[i.id] && !cloudMap[i.id]; });
+  if (!toUpload.length) { showToast('Alle foto’s staan al in de cloud ✓'); return; }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'reupload-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:700;display:flex;align-items:center;justify-content:center;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--cream);border-radius:16px;padding:24px 20px;width:280px;text-align:center;';
+  box.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--brown);margin-bottom:8px;">📤 Foto’s uploaden</div>'
+    + '<div id="reupload-status" style="font-size:11px;color:var(--muted);margin-bottom:12px;">Bezig...</div>'
+    + '<div style="background:var(--cream-dark);border-radius:8px;height:6px;overflow:hidden;">'
+    + '<div id="reupload-bar" style="background:var(--brown-warm);height:100%;width:0%;border-radius:8px;transition:width 0.3s;"></div></div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  var done = 0; var failed = 0;
+  for (var idx2 = 0; idx2 < toUpload.length; idx2++) {
+    var item = toUpload[idx2];
+    var statusEl = document.getElementById('reupload-status');
+    var barEl = document.getElementById('reupload-bar');
+    if (statusEl) statusEl.textContent = (idx2+1) + '/' + toUpload.length + ' — ' + item.name;
+    if (barEl) barEl.style.width = Math.round(((idx2+1) / toUpload.length) * 100) + '%';
+    try {
+      var photoData = photos[item.id];
+      if (!photoData) { failed++; continue; }
+      var blob2;
+      if (photoData.startsWith('data:')) {
+        var arr2 = photoData.split(','); var mime2 = arr2[0].match(/:(.*?);/)[1];
+        var bstr2 = atob(arr2[1]); var n2 = bstr2.length; var u8arr2 = new Uint8Array(n2);
+        while (n2--) u8arr2[n2] = bstr2.charCodeAt(n2);
+        blob2 = new Blob([u8arr2], { type: mime2 });
+      } else {
+        var resp2 = await fetch(photoData); blob2 = await resp2.blob();
+      }
+      var file2 = new File([blob2], 'photo_' + item.id + '.jpg', { type: blob2.type || 'image/jpeg' });
+      var cloudUrl2 = await uploadToCloudinary(file2, item.id);
+      photos[item.id] = cloudUrl2; saveCloudinaryUrl(item.id, cloudUrl2); done++;
+    } catch(err2) { failed++; }
+  }
+  var ovl = document.getElementById('reupload-overlay'); if (ovl) ovl.remove();
+  buildGarderobe(); buildBoards();
+  var msg2 = '\u2713 ' + done + (done===1?' foto':" foto's") + ' gesynchroniseerd';
+  if (failed > 0) msg2 += ' (' + failed + ' mislukt)';
+  showToast(msg2);
+}
+
 async function publishToGitHub() {
   showToast('🚀 App opslaan naar GitHub...');
   try {
@@ -6396,7 +6450,7 @@ async function generateBoardOutfitsWithCounts(boardId, counts, extra) {
     saveAllBtn.textContent = '+ Alles opslaan in ' + board.label + ' (' + outfits.length + ' outfits)';
     saveAllBtn.addEventListener('click', function() {
       outfits.forEach(function(sug,idx){
-        var mIds=(sug.items||[]).map(function(name){var nl=name.toLowerCase().trim();var f=allItems.find(function(i){return i.name.toLowerCase()===nl;})||allItems.find(function(i){return i.name.toLowerCase().includes(nl);})||allItems.find(function(i){return nl.includes(i.name.toLowerCase().substring(0,10))&&i.name.length>6;});return f?f.id:null;}).filter(Boolean);
+        var mIds=(sug.items||[]).map(function(name){var nl=name.toLowerCase().trim();var f=allItems.find(function(i){return i.name.toLowerCase()===nl;});if(!f) f=allItems.reduce(function(best,i){var iWords=i.name.toLowerCase().split(' ').filter(function(w){return w.length>3;});if(!iWords.length) return best;var hits=iWords.filter(function(w){return nl.includes(w);}).length;var score=hits/iWords.length;return score>0.6&&score>(best?best.score:0)?{item:i,score:score}:best;},null);if(f&&f.item) f=f.item; else if(f&&!f.item) f=null;if(!f) f=allItems.find(function(i){return nl.includes(i.name.toLowerCase().substring(0,10))&&i.name.length>6;});return f?f.id:null;}).filter(Boolean);
         if(mIds.length){outfitCounter++;board.outfits.push({id:'outfit-'+outfitCounter,name:sug.naam||'Look '+(idx+1),items:mIds});}
       });
       saveAppData(); showToast('\u2713 ' + outfits.length + ' outfits opgeslagen');
@@ -6404,7 +6458,7 @@ async function generateBoardOutfitsWithCounts(boardId, counts, extra) {
     });
     contentDiv.appendChild(saveAllBtn);
     outfits.forEach(function(sug,idx){
-      var matchedIds=(sug.items||[]).map(function(name){var nl=name.toLowerCase().trim();var f=allItems.find(function(i){return i.name.toLowerCase()===nl;})||allItems.find(function(i){return i.name.toLowerCase().includes(nl);})||allItems.find(function(i){return nl.includes(i.name.toLowerCase().substring(0,10))&&i.name.length>6;});return f?f.id:null;}).filter(Boolean);
+      var matchedIds=(sug.items||[]).map(function(name){var nl=name.toLowerCase().trim();var f=allItems.find(function(i){return i.name.toLowerCase()===nl;});if(!f) f=allItems.reduce(function(best,i){var iWords=i.name.toLowerCase().split(' ').filter(function(w){return w.length>3;});if(!iWords.length) return best;var hits=iWords.filter(function(w){return nl.includes(w);}).length;var score=hits/iWords.length;return score>0.6&&score>(best?best.score:0)?{item:i,score:score}:best;},null);if(f&&f.item) f=f.item; else if(f&&!f.item) f=null;if(!f) f=allItems.find(function(i){return nl.includes(i.name.toLowerCase().substring(0,10))&&i.name.length>6;});return f?f.id:null;}).filter(Boolean);
       var card=document.createElement('div');
       card.style.cssText='background:var(--white);border-radius:12px;padding:12px;margin-bottom:8px;border:1.5px solid var(--cream-dark);';
       var photoRow=matchedIds.slice(0,4).map(function(id){return '<div style="width:44px;height:54px;border-radius:7px;overflow:hidden;background:var(--cream-dark);flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+(photos[id]?'<img src="'+photos[id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);">'+getItemName(id).split(' ')[0]+'</span>')+'</div>';}).join('');
