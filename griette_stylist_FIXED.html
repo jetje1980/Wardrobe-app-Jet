@@ -5928,11 +5928,11 @@ function openBoardSettings(boardId) {
     var ph = photos[item.id] ? '<img src="' + photos[item.id] + '" style="width:100%;height:100%;object-fit:cover;">'
       : '<span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;">' + item.name.split(' ')[0] + '</span>';
     return '<div onclick="bsToggleItem(this)" data-id="' + item.id + '" '
-      + 'style="border-radius:8px;overflow:hidden;cursor:pointer;position:relative;'
+      + 'style="border-radius:8px;cursor:pointer;position:relative;'
       + 'border:2px solid ' + (sel?'var(--brown-warm)':'var(--cream-dark)') + ';">'
       + '<div style="aspect-ratio:1;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;">' + ph + '</div>'
       + '<div style="font-size:7px;color:var(--brown);text-align:center;padding:3px 2px;">' + (item.name.length>14?item.name.substring(0,13)+'\u2026':item.name) + '</div>'
-      + (sel?'<div style="position:absolute;top:2px;right:2px;width:14px;height:14px;background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">\u2713</div>':'')
+      + (sel?'<div class="bs-check" style="position:absolute;top:2px;right:2px;width:16px;height:16px;background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;z-index:2;">\u2713</div>':'')
       + '</div>';
   }).join('');
 
@@ -5996,11 +5996,15 @@ function bsToggleKlimaat(btn) {
 function bsToggleItem(div) {
   var sel = div.style.borderColor === 'var(--brown-warm)';
   div.style.borderColor = sel ? 'var(--cream-dark)' : 'var(--brown-warm)';
-  var check = div.querySelector('[style*="brown-warm"][style*="border-radius:50%"]');
-  if (sel && check) check.remove();
-  else if (!sel) {
+  var check = div.querySelector('.bs-check');
+  if (sel && check) {
+    check.remove();
+  } else if (!sel) {
     var c = document.createElement('div');
-    c.style.cssText = 'position:absolute;top:2px;right:2px;width:14px;height:14px;background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;';
+    c.className = 'bs-check';
+    c.style.cssText = 'position:absolute;top:2px;right:2px;width:16px;height:16px;'
+      + 'background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;'
+      + 'justify-content:center;color:white;font-size:10px;font-weight:bold;z-index:2;';
     c.textContent = '\u2713';
     div.appendChild(c);
   }
@@ -6014,7 +6018,7 @@ function saveBoardSettingsFromSheet(boardId) {
   if (noteEl) s.note = noteEl.value.trim();
   var klimaatActive = Array.from(document.querySelectorAll('#bs-klimaat button')).filter(function(b){ return b.style.background === 'var(--brown)'; });
   if (klimaatActive.length) s.klimaat = klimaatActive.map(function(b){ return b.dataset.val; }).join(', ');
-  s.favoriteItems = Array.from(document.querySelectorAll('#bs-items [data-id]')).filter(function(d){ return d.style.borderColor === 'var(--brown-warm)'; }).map(function(d){ return d.dataset.id; });
+  s.favoriteItems = Array.from(document.querySelectorAll('#bs-items [data-id]')).filter(function(d){ return d.querySelector('.bs-check') !== null; }).map(function(d){ return d.dataset.id; });
   saveBoardSettings();
 }
 
