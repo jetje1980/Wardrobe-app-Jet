@@ -7787,13 +7787,35 @@ async function generateFromBuilder() {
 
   showToast('\u2756 Stylist stelt outfit samen...');
 
+  // Build wardrobe per category for clearer context
+  var catLabelsB = {tops:'TOPS',bottoms:'ROKKEN & BROEKEN',jurken:'JURKEN',layers:'LAAGJES',shoes:'SCHOENEN',bags:'TASSEN'};
+  var restByCat = {};
+  rest.forEach(function(i){ if(!restByCat[i.cat])restByCat[i.cat]=[];var k=getTag(i.id,'kleur')||'';restByCat[i.cat].push(i.name+(k?' ['+k+']':'')); });
+  var restFormatted = Object.entries(restByCat).map(function(e){
+    return (catLabelsB[e[0]]||e[0].toUpperCase())+': '+e[1].join(', ');
+  }).join('\n');
+
+  // Detect what categories are already chosen
+  var chosenCats = _builderItems.map(function(id){ var it=allItems.find(function(i){return i.id===id;}); return it?it.cat:''; });
+  var needsBottom = !chosenCats.includes('bottoms') && !chosenCats.includes('jurken');
+  var needsTop = !chosenCats.includes('tops') && !chosenCats.includes('jurken');
+  var needsShoes = !chosenCats.includes('shoes');
+
+  var missingHint = [];
+  if (needsTop) missingHint.push('een top of jurk');
+  if (needsBottom) missingHint.push('een rok of broek (tenzij jurk gekozen)');
+  if (needsShoes) missingHint.push('schoenen (VERPLICHT)');
+
   var prompt = 'Je bent Griette\'s stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken.\n\n'
-    + (chosen.length ? 'GEKOZEN ITEMS: ' + chosen.join(', ') + '\n' : '')
-    + (chosen.length ? 'Bouw een complete outfit RONDOM deze gekozen items.\n' : 'Stel 1 verrassende complete outfit voor.\n')
-    + 'AANVULLENDE ITEMS BESCHIKBAAR: ' + restList + '\n\n'
-    + 'Maak 3 verschillende complete outfits. ' + (chosen.length ? 'De gekozen items MOETEN erin. ' : '') + 'MAX 4 items per outfit.\n'
-    + 'Varieer en maak het spannend. Geef ALLEEN JSON:\n'
-    + '[{"naam":"...","items":["exacte naam","exacte naam","exacte schoenen"],"tip":"stijltip"}]';
+    + (chosen.length ? 'GEKOZEN ITEMS (moeten in elke outfit):\n' + chosen.join('\n') + '\n\n' : '')
+    + 'BESCHIKBARE ITEMS PER CATEGORIE:\n' + restFormatted + '\n\n'
+    + 'Maak 3 complete outfits. '
+    + (chosen.length ? 'De gekozen items MOETEN erin. ' : '')
+    + (missingHint.length ? 'Voeg toe uit de lijst hierboven: ' + missingHint.join(', ') + '. ' : '')
+    + 'MAX 4 items. Elke outfit moet schoenen bevatten.\n'
+    + 'Gebruik ALLEEN exacte namen uit de lijsten hierboven.\n'
+    + 'Geef ALLEEN JSON:\n'
+    + '[{"naam":"...","items":["exacte top","exacte rok/broek","exacte schoenen"],"tip":"stijltip"}]';
 
   try {
     var res = await fetch('https://griette-stylist.griette.workers.dev',{
