@@ -349,6 +349,9 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
   <button type="button" onclick="closeMeerSheet();publishToGitHub();" style="width:100%;padding:14px;background:var(--brown);color:var(--cream);border:none;border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
     🚀 Publiceer update — sla app op naar GitHub
   </button>
+  <button type="button" onclick="closeMeerSheet();openYesterdayLog();" style="width:100%;padding:14px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--brown);">
+    📆 Gisteren gelogd? Wat droeg je?
+  </button>
   <button type="button" onclick="closeMeerSheet();reuploadAllPhotos();" style="width:100%;padding:14px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--brown);">
     📤 Foto’s synchroniseren
   </button>
@@ -479,6 +482,7 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
 <div class="panel" id="panel-regels">
   <p class="panel-title">Stijl DNA</p>
   <p class="panel-sub">Jouw persoonlijke stijlprofiel opgesteld door Iconic Wardrobe.</p>
+  <button type="button" onclick="showPatternInsights()" style="width:100%;padding:14px;margin-bottom:10px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">🧠 Bekijk jouw stijlpatronen</button>
   <button type="button" id="shoppinglist-btn" onclick="openShopPanel()" style="width:100%;padding:14px;margin-bottom:20px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;">🛍 Genereer shoppinglijst op basis van jouw gaps</button>
 
   <!-- STIJL DNA KAARTEN -->
@@ -1486,6 +1490,15 @@ function buildItemCard(item) {
     b.textContent = 'Nieuw';
     card.appendChild(b);
   }
+  // Season icon
+  const seizoen = getTag(item.id, 'seizoen');
+  if (seizoen && seizoen !== 'beide') {
+    const sb = document.createElement('div');
+    sb.style.cssText = 'position:absolute;top:4px;left:4px;font-size:11px;line-height:1;z-index:2;';
+    sb.textContent = seizoen === 'zomer' ? '\u2600\uFE0F' : '\u2744\uFE0F';
+    sb.title = seizoen;
+    card.appendChild(sb);
+  }
 
   card.appendChild(pa);
   card.appendChild(check);
@@ -1682,6 +1695,29 @@ function buildBoards() {
     var titleDiv = document.createElement('div');
     titleDiv.style.cssText = 'display:flex;align-items:center;gap:10px;';
     titleDiv.innerHTML = '<span style="font-size:24px;">' + b.emoji + '</span><span style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);">' + b.label + '</span>';
+
+    // Capsule count summary
+    var capsuleIds2 = new Set();
+    var capCounts = {};
+    (b.outfits||[]).forEach(function(o){
+      (o.items||[]).forEach(function(id){
+        if(capsuleIds2.has(id))return; capsuleIds2.add(id);
+        var it=getAllItems().find(function(i){return i.id===id;}); if(it)capCounts[it.cat]=(capCounts[it.cat]||0)+1;
+      });
+    });
+    if(capsuleIds2.size>0){
+      var capParts=[];
+      if(capCounts.tops)capParts.push(capCounts.tops+'T');
+      if(capCounts.bottoms)capParts.push(capCounts.bottoms+'B');
+      if(capCounts.jurken)capParts.push(capCounts.jurken+'J');
+      if(capCounts.shoes)capParts.push(capCounts.shoes+'S');
+      var kofHint = capsuleIds2.size<=7?'\u1f9f3':capsuleIds2.size<=15?'1 koffer':'2 koffers';
+      var capEl=document.createElement('div');
+      capEl.style.cssText='font-size:9px;color:var(--muted);margin-top:2px;';
+      capEl.textContent=capsuleIds2.size+' items \u00b7 '+capParts.join(' \u00b7 ')+(capsuleIds2.size<=7?' \u00b7 handbagage':capsuleIds2.size<=15?' \u00b7 1 koffer':' \u00b7 2 koffers');
+      titleDiv.appendChild(capEl);
+    }
+
 
     var addBtn = document.createElement('button');
     addBtn.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--brown);color:var(--cream);border:none;border-radius:20px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;letter-spacing:1px;';
@@ -3948,6 +3984,16 @@ function scoreCombo(top, bottom, shoes, bag, layer) {
   [topKleur, bottomKleur].forEach(function(k) {
     if (k && likedColors[k]) score += Math.min(likedColors[k] * 0.8, 2.5);
   });
+  // Also boost based on actual worn pattern (colors worn most in last 30 days)
+  try {
+    var wornPat = analyzeWornPatterns();
+    if (wornPat.colorFreq) {
+      [topKleur, bottomKleur].forEach(function(k){
+        if (k && wornPat.colorFreq[k]) score += Math.min(wornPat.colorFreq[k] * 0.3, 1.5);
+      });
+    }
+  } catch(e2) {}
+
 
   // Surprise/variety bonus
   var accentKls2 = ['felroze','paars','geel','oranje-rood','lichtblauw','groen'];
@@ -4013,7 +4059,6 @@ function rapportComboBonus(topId, bottomId, layerId) {
 }
 
 function getLikedColorPattern() {
-  // Count how many liked items are in each color
   var counts = {};
   Object.entries(outfitLikes).forEach(function(entry) {
     if (entry[1] !== 1) return;
@@ -4021,6 +4066,51 @@ function getLikedColorPattern() {
     if (kleur) counts[kleur] = (counts[kleur] || 0) + 1;
   });
   return counts;
+}
+
+function analyzeWornPatterns() {
+  // Analyze last 30 days of worn log
+  var colorFreq = {}, catFreq = {}, comboFreq = {}, dayFreq = {}, shoeFreq = {};
+  var days = Object.keys(wornLog).sort().slice(-30);
+
+  days.forEach(function(dateStr) {
+    var ids = wornLog[dateStr] || [];
+    var dayName = ['Zo','Ma','Di','Wo','Do','Vr','Za'][new Date(dateStr).getDay()];
+    dayFreq[dayName] = (dayFreq[dayName] || 0) + 1;
+
+    // Color + category frequency
+    ids.forEach(function(id) {
+      var k = getTag(id, 'kleur'); if (k) colorFreq[k] = (colorFreq[k]||0) + 1;
+      var allIt2 = getAllItems(); var it = allIt2.find(function(i){return i.id===id;});
+      if (it) { catFreq[it.cat] = (catFreq[it.cat]||0) + 1; }
+      if (it && it.cat === 'shoes') { shoeFreq[it.name] = (shoeFreq[it.name]||0)+1; }
+    });
+
+    // Top+bottom combos
+    var tops2 = ids.filter(function(id){ var it=getAllItems().find(function(i){return i.id===id;}); return it&&it.cat==='tops'; });
+    var bottoms2 = ids.filter(function(id){ var it=getAllItems().find(function(i){return i.id===id;}); return it&&(it.cat==='bottoms'||it.cat==='jurken'); });
+    tops2.forEach(function(t){ bottoms2.forEach(function(b){
+      var key = t+'_'+b; comboFreq[key]=(comboFreq[key]||0)+1;
+    }); });
+  });
+
+  // Top findings
+  var topColors = Object.entries(colorFreq).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return e[0];});
+  var topShoes = Object.entries(shoeFreq).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(e){return e[0];});
+  var topCombo = Object.entries(comboFreq).sort(function(a,b){return b[1]-a[1];}).slice(0,1).map(function(e){
+    var parts = e[0].split('_'); return getItemName(parts[0]) + ' + ' + getItemName(parts[1]);
+  });
+  var favDay = Object.entries(dayFreq).sort(function(a,b){return b[1]-a[1];})[0];
+
+  return {
+    topColors: topColors,
+    topShoes: topShoes,
+    topCombo: topCombo[0] || null,
+    favDay: favDay ? favDay[0] : null,
+    totalDaysLogged: days.length,
+    colorFreq: colorFreq,
+    shoeFreq: shoeFreq
+  };
 }
 
 // ============ AI STYLING TIP via Claude API ============
@@ -5017,28 +5107,24 @@ function buildWeekPlanner(){
       var occLbl=plan?(occasionTitles[plan.occasion]||plan.occasion||''):'';
       var hdr=document.createElement('div');
       hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;';
-      // Check for item repeated from previous day
+      // Check for item repeated this week (planned OR worn)
       var rotWarn = '';
       if (plan && plan.items) {
-        var prevDate = new Date(d); prevDate.setDate(d.getDate()-1);
-        var prevDs = prevDate.toISOString().split('T')[0];
-        var prevPlan = weekPlan[prevDs];
-        if (prevPlan && prevPlan.items) {
-          var overlap = plan.items.filter(function(id){ return prevPlan.items.includes(id) && id !== undefined; });
-          var mainOverlap = overlap.filter(function(id){ var c = null; for(var cat in items){ if(items[cat].find(function(x){return x.id===id;})) c=cat; } return c==='tops'||c==='bottoms'; });
-          if (mainOverlap.length > 0) rotWarn = '<div style="font-size:9px;color:#b5232a;padding:2px 14px 8px;">' + '⚠ ' + getItemName(mainOverlap[0]).split(' ').slice(0,2).join(' ') + ' ook gisteren gepland</div>';
+        var weekItemCount = {};
+        for (var wi = 0; wi < 7; wi++) {
+          var wd = new Date(today); wd.setDate(today.getDate() + wi);
+          var wds = wd.toISOString().split('T')[0];
+          var wItems = (weekPlan[wds] && weekPlan[wds].items) ? weekPlan[wds].items : [];
+          var wornItems2 = wornLog[wds] || [];
+          [...wItems, ...wornItems2].forEach(function(id) { weekItemCount[id] = (weekItemCount[id]||0) + 1; });
         }
-      }
-      // Check for item repeated from previous day
-      var rotWarn = '';
-      if (plan && plan.items) {
-        var prevDate = new Date(d); prevDate.setDate(d.getDate()-1);
-        var prevDs = prevDate.toISOString().split('T')[0];
-        var prevPlan = weekPlan[prevDs];
-        if (prevPlan && prevPlan.items) {
-          var overlap = plan.items.filter(function(id){ return prevPlan.items.includes(id) && id !== undefined; });
-          var mainOverlap = overlap.filter(function(id){ var c = null; for(var cat in items){ if(items[cat].find(function(x){return x.id===id;})) c=cat; } return c==='tops'||c==='bottoms'; });
-          if (mainOverlap.length > 0) rotWarn = '<div style="font-size:9px;color:#b5232a;padding:2px 14px 8px;">' + '⚠ ' + getItemName(mainOverlap[0]).split(' ').slice(0,2).join(' ') + ' ook gisteren gepland</div>';
+        var repeats = plan.items.filter(function(id) {
+          var cat = null; for (var cat2 in items) { if (items[cat2].find(function(x){return x.id===id;})) cat=cat2; }
+          return (cat==='tops'||cat==='bottoms') && weekItemCount[id] > 1;
+        });
+        if (repeats.length > 0) {
+          rotWarn = '<div style="font-size:9px;color:#b5232a;padding:2px 14px 8px;">'
+            + '\u26a0 ' + getItemName(repeats[0]).split(' ').slice(0,2).join(' ') + ' ook elders deze week</div>';
         }
       }
       hdr.innerHTML='<div><span style="font-family:Cormorant Garamond,serif;font-size:18px;font-weight:400;color:'+(isT?'var(--brown-warm)':'var(--brown)')+';">'+dn+'</span>'+(occLbl?'<span style="font-size:8px;color:var(--brown-warm);background:rgba(155,98,64,0.08);border-radius:6px;padding:1px 6px;margin-left:5px;">'+occLbl+'</span>':'')+'<div style="font-size:9px;color:var(--muted);margin-top:1px;">'+dl+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:'+(plan?'var(--brown)':'var(--muted)')+';font-style:'+(plan?'normal':'italic')+';">'+(plan?plan.outfitName||'Gepland':'Niet gepland')+'</span>'+(plan?'<button style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;" id="clr-'+ds+'">&#215;</button>':'')+'</div>';
@@ -7225,6 +7311,68 @@ async function generateOutfitFromAnchor(boardId, anchorId, anchorName) {
   }
 }
 
+
+// ============ PATTERN ANALYSIS ============
+function analyzeWornPatterns() {
+  var allItems = getAllItems();
+  var catMap = {};
+  allItems.forEach(function(i){ catMap[i.id] = i.cat; });
+
+  // Count how often each item is worn
+  var itemCount = {};
+  var shoeWithBottom = {}; // shoe_id -> {rok:0, broek:0}
+  var topWithBottom = {};
+
+  Object.values(wornLog).forEach(function(dayItems) {
+    var dayTops = dayItems.filter(function(id){ return catMap[id]==='tops'; });
+    var dayBottoms = dayItems.filter(function(id){ return catMap[id]==='bottoms'||catMap[id]==='jurken'; });
+    var dayShoes = dayItems.filter(function(id){ return catMap[id]==='shoes'; });
+
+    dayItems.forEach(function(id){ itemCount[id] = (itemCount[id]||0) + 1; });
+
+    // Track shoe + bottom combos
+    dayShoes.forEach(function(shoeId) {
+      if (!shoeWithBottom[shoeId]) shoeWithBottom[shoeId] = {rok:0,broek:0};
+      dayBottoms.forEach(function(botId) {
+        var nm = getItemName(botId).toLowerCase();
+        if (nm.includes('rok')||nm.includes('skirt')||catMap[botId]==='jurken') shoeWithBottom[shoeId].rok++;
+        else shoeWithBottom[shoeId].broek++;
+      });
+    });
+  });
+
+  // Top 3 most worn items
+  var sortedItems = Object.entries(itemCount).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+  var favItems = sortedItems.map(function(e){ return getItemName(e[0]) + ' (' + e[1] + 'x)'; }).join(', ');
+
+  // Least worn (not worn in 30 days and exists in wardrobe)
+  var thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
+  var recentWornIds = new Set();
+  Object.entries(wornLog).forEach(function(e){
+    if (new Date(e[0]) > thirtyDaysAgo) e[1].forEach(function(id){ recentWornIds.add(id); });
+  });
+  var neverRecent = allItems.filter(function(i){
+    return !recentWornIds.has(i.id) && !deletedItemIds.has(i.id) && i.cat !== 'bags' && i.cat !== 'accessories';
+  }).map(function(i){ return i.name; }).slice(0,5);
+
+  // Shoe preference with rok vs broek
+  var shoePrefs = [];
+  Object.entries(shoeWithBottom).forEach(function(e){
+    var total = e[1].rok + e[1].broek;
+    if (total > 1) {
+      var pref = e[1].rok > e[1].broek ? 'vaker met rok/jurk' : 'vaker met broek';
+      shoePrefs.push(getItemName(e[0]) + ': ' + pref);
+    }
+  });
+
+  return {
+    favItems: favItems,
+    neverRecent: neverRecent,
+    shoePrefs: shoePrefs.slice(0,3),
+    totalDaysLogged: Object.keys(wornLog).length
+  };
+}
+
 // ============ QUICK OUTFIT OF THE DAY ============
 var _dailyPrefBottom = null; // 'rok' | 'broek' | null
 var _dailyPrefShoe = null;   // 'sneakers' | 'sandalen' | 'laarzen' | null
@@ -7694,6 +7842,128 @@ async function generateFromBuilder() {
   } catch(err) {
     showToast('\u26a0 Kon geen outfit maken: ' + err.message);
   }
+}
+
+// ============ YESTERDAY LOG ============
+function openYesterdayLog() {
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  var yd = yesterday.toISOString().split('T')[0];
+  var dayNames = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  var dayName = dayNames[yesterday.getDay()];
+  var existing = wornLog[yd] || [];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:650;display:flex;align-items:flex-end;';
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding:20px 16px 40px;';
+
+  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);margin-bottom:4px;">📆 ' + dayName.charAt(0).toUpperCase()+dayName.slice(1) + '</div>'
+    + '<p style="font-size:11px;color:var(--muted);margin-bottom:14px;">Wat droeg je gisteren? Tik items aan.</p>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;" id="yd-grid"></div>';
+
+  var selected = existing.slice();
+  var allItems = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+
+  setTimeout(function(){
+    var grid = document.getElementById('yd-grid');
+    if (!grid) return;
+    allItems.forEach(function(item){
+      var sel = selected.includes(item.id);
+      var div = document.createElement('div');
+      div.id = 'yd-'+item.id;
+      div.style.cssText = 'border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid '+(sel?'var(--brown-warm)':'var(--cream-dark)')+';position:relative;';
+      var ph = photos[item.id]?'<img src="'+photos[item.id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;display:block;">'+item.name.split(' ')[0]+'</span>';
+      div.innerHTML = '<div style="aspect-ratio:1;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;">'+ph+'</div>'
+        +'<div style="font-size:7px;color:var(--brown);text-align:center;padding:3px 2px;">'+(item.name.length>13?item.name.substring(0,12)+'\u2026':item.name)+'</div>'
+        +(sel?'<div class="yd-check" style="position:absolute;top:2px;right:2px;width:15px;height:15px;background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">\u2713</div>':'');
+      div.addEventListener('click', function(){
+        var idx = selected.indexOf(item.id);
+        if (idx !== -1) {
+          selected.splice(idx,1); div.style.borderColor='var(--cream-dark)';
+          var ck=div.querySelector('.yd-check'); if(ck)ck.remove();
+        } else {
+          selected.push(item.id); div.style.borderColor='var(--brown-warm)';
+          var c=document.createElement('div'); c.className='yd-check';
+          c.style.cssText='position:absolute;top:2px;right:2px;width:15px;height:15px;background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;';
+          c.textContent='\u2713'; div.appendChild(c);
+        }
+      });
+      grid.appendChild(div);
+    });
+  }, 50);
+
+  var saveBtn = document.createElement('button');
+  saveBtn.style.cssText = 'width:100%;padding:13px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:4px;margin-bottom:8px;';
+  saveBtn.textContent = '\u2756 Opslaan';
+  saveBtn.addEventListener('click', function(){
+    if (selected.length) {
+      wornLog[yd] = selected;
+      saveWornLog();
+      showToast('\u2756 ' + selected.length + ' items gelogd voor ' + dayName);
+    }
+    overlay.remove();
+  });
+  var cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'width:100%;padding:11px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);';
+  cancelBtn.textContent = 'Annuleren';
+  cancelBtn.addEventListener('click', function(){ overlay.remove(); });
+  sheet.appendChild(saveBtn); sheet.appendChild(cancelBtn);
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ============ PATTERN INSIGHTS IN DNA TAB ============
+function showPatternInsights() {
+  var p = analyzeWornPatterns();
+  if (!p.totalDaysLogged) { showToast('Nog niet genoeg data. Log eerst een paar outfits!'); return; }
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:650;display:flex;align-items:flex-end;';
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding:20px 16px 50px;';
+
+  var colorDots = {'donkerblauw':'#162038','bruin':'#5c3317','zwart':'#111','gebroken-wit':'#f0e8d8','felroze':'#d4668a','paars':'#7b3fa0','geel':'#d4b84a','oranje-rood':'#b5232a','lichtblauw':'#a8c4e0','groen':'#4a8a5c'};
+  var colorBubbles = p.topColors.map(function(c){ return '<span style="display:inline-flex;align-items:center;gap:4px;background:white;border-radius:12px;padding:3px 8px 3px 5px;margin:2px;font-size:10px;"><span style="width:10px;height:10px;border-radius:50%;background:'+(colorDots[c]||'#999')+';display:inline-block;"></span>'+c+'</span>'; }).join('');
+
+  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);margin-bottom:4px;">🧠 Jouw stijlpatronen</div>'
+    + '<p style="font-size:11px;color:var(--muted);margin-bottom:20px;">Gebaseerd op ' + p.totalDaysLogged + ' dagen stijldata.</p>'
+
+    + '<div style="background:var(--white);border-radius:12px;padding:14px;margin-bottom:10px;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Favoriete kleuren</div>'
+    + (p.topColors.length ? colorBubbles : '<span style="font-size:11px;color:var(--muted);">Nog niet genoeg data</span>')
+    + '</div>'
+
+    + (p.topShoes.length ? '<div style="background:var(--white);border-radius:12px;padding:14px;margin-bottom:10px;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Meest gedragen schoenen</div>'
+    + p.topShoes.map(function(s){ return '<div style="font-size:11px;color:var(--brown);margin-bottom:3px;">👟 '+s+'</div>'; }).join('')
+    + '</div>' : '')
+
+    + (p.topCombo ? '<div style="background:var(--white);border-radius:12px;padding:14px;margin-bottom:10px;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Favoriete combo</div>'
+    + '<div style="font-size:11px;color:var(--brown);">\u2756 ' + p.topCombo + '</div>'
+    + '</div>' : '')
+
+    + (p.favDay ? '<div style="background:var(--white);border-radius:12px;padding:14px;margin-bottom:10px;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Meest actief op</div>'
+    + '<div style="font-size:11px;color:var(--brown);">\U0001f4c5 ' + p.favDay + '</div>'
+    + '</div>' : '')
+
+    + '<div style="background:rgba(155,98,64,0.08);border-radius:12px;padding:14px;margin-bottom:10px;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">De stylist gebruikt dit voor</div>'
+    + '<div style="font-size:11px;color:var(--brown);line-height:1.6;">\u2022 Kleurcombo scoring in suggesties<br>\u2022 Outfit-van-vandaag generatie<br>\u2022 Board outfit prioritering</div>'
+    + '</div>';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'width:100%;padding:12px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-top:4px;';
+  closeBtn.textContent = 'Sluiten';
+  closeBtn.addEventListener('click', function(){ overlay.remove(); });
+  sheet.appendChild(closeBtn);
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 // ============ COPY OUTFIT TO BOARD ============
@@ -8388,6 +8658,18 @@ ${wardrobeText}
 
 **Planning:** Denk vooruit per seizoen of gelegenheid. Prioriteer concreet.
 
+
+${(function(){
+  try {
+    var p = analyzeWornPatterns();
+    var txt = '';
+    if (p.favItems) txt += '\n### DRAAGPATRONEN (automatisch geanalyseerd)\n';
+    if (p.favItems) txt += 'Meest gedragen: ' + p.favItems + '\n';
+    if (p.neverRecent && p.neverRecent.length) txt += 'Lang niet gedragen: ' + p.neverRecent.join(', ') + '\n';
+    if (p.shoePrefs && p.shoePrefs.length) txt += 'Schoenpatroon: ' + p.shoePrefs.join('; ') + '\n';
+    return txt;
+  } catch(e) { return ''; }
+})()}
 Spreek altijd Nederlands. Wees bondig. Eindig altijd met één concrete actie of beslissing.`;
 }
 
