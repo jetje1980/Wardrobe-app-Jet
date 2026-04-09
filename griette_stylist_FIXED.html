@@ -8097,6 +8097,16 @@ function openCyclusTracker() {
     + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Of kies een specifieke startdatum</div>'
     + '<input type="date" id="cyclus-start-date" value="' + (cyclusData.startDate||'') + '" '
     + 'style="width:100%;padding:10px 12px;border:1.5px solid var(--cream-dark);border-radius:10px;font-size:14px;font-family:Jost,sans-serif;background:var(--white);margin-bottom:14px;box-sizing:border-box;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;margin-top:6px;">Vorige cycluslengte (dagen)</div>'
+    + '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;" id="cyclus-len-btns">'
+    + [21,24,26,27,28,29,30,32,35].map(function(n){
+        var sel = (cyclusData.avgLength||cyclusData.lengthDays||28) === n;
+        return '<button type="button" onclick="setCyclusLen(' + n + ',this)" '
+          + 'style="padding:6px 11px;border-radius:16px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;border:1.5px solid '
+          + (sel?'var(--brown)':'var(--cream-dark)') + ';background:' + (sel?'var(--brown)':'var(--white)') + ';color:' + (sel?'var(--cream)':'var(--brown)') + ';">' + n + '</button>';
+      }).join('')
+    + '</div>'
+    + '<div style="font-size:9px;color:var(--muted);margin-bottom:12px;">Of typ handmatig: <input id="cyclus-len-input" type="number" min="18" max="50" placeholder="bijv. 26" value="' + (cyclusData.avgLength||cyclusData.lengthDays||28) + '" style="width:60px;padding:4px 8px;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:11px;font-family:Jost,sans-serif;"></div>'
     + '<button onclick="startCyclusVanDatum()" style="width:100%;padding:11px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:20px;">Opslaan met gekozen datum</button>'
 
     // Klachten
@@ -8148,14 +8158,31 @@ function startNieuweCyclusVandaag() {
   openCyclusTracker(); // reopen to show dag 1
 }
 
+function setCyclusLen(n, btn) {
+  cyclusData.avgLength = n; cyclusData.lengthDays = n;
+  document.querySelectorAll('#cyclus-len-btns button').forEach(function(b){
+    var isThis = b.textContent.trim() == n;
+    b.style.background = isThis?'var(--brown)':'var(--white)';
+    b.style.color = isThis?'var(--cream)':'var(--brown)';
+    b.style.borderColor = isThis?'var(--brown)':'var(--cream-dark)';
+  });
+  var inp = document.getElementById('cyclus-len-input'); if(inp) inp.value = n;
+}
+
 function startCyclusVanDatum() {
   var el = document.getElementById('cyclus-start-date');
-  if (el && el.value) {
-    startNieuweCyclus(el.value);
-    var ov = document.getElementById('cyclus-overlay'); if(ov) ov.remove();
-    updateDailyCardWithCyclus();
-    showToast('\u2756 Cyclus opgeslagen');
+  if (!el || !el.value) { showToast('Kies eerst een datum'); return; }
+  // Save length from input or buttons
+  var lenInp = document.getElementById('cyclus-len-input');
+  if (lenInp && parseInt(lenInp.value) > 14) {
+    cyclusData.avgLength = parseInt(lenInp.value);
+    cyclusData.lengthDays = parseInt(lenInp.value);
   }
+  startNieuweCyclus(el.value);
+  var ov = document.getElementById('cyclus-overlay'); if(ov) ov.remove();
+  updateDailyCardWithCyclus();
+  var day2 = getCyclusDay();
+  showToast('\u2756 Cyclus opgeslagen \u2014 vandaag dag ' + (day2||'?'));
 }
 
 
