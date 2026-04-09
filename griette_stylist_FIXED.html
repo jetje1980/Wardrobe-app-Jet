@@ -371,14 +371,26 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
     <button style="flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;cursor:pointer;color:var(--muted);font-family:'Jost',sans-serif;" onclick="setFilter('bags',this)">Tassen</button>
   </div>
   <!-- Daily inspiration card -->
-  <div id="daily-card" style="background:var(--brown);border-radius:14px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="openDailyInspo()">
-    <div>
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(201,168,122,0.8);margin-bottom:4px;">Vandaag</div>
-      <div id="daily-card-text" style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:var(--cream);line-height:1.2;">Wat trek je aan?</div>
-      <div id="daily-card-sub" style="font-size:9px;color:rgba(247,241,232,0.5);margin-top:3px;">Tik voor een outfitsuggestie</div>
+  <div id="daily-card" style="background:var(--brown);border-radius:14px;margin-bottom:16px;overflow:hidden;">
+    <div style="padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="openQuickOutfit()">
+      <div>
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(201,168,122,0.8);margin-bottom:4px;">Vandaag</div>
+        <div id="daily-card-text" style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:var(--cream);line-height:1.2;">Wat trek je aan?</div>
+        <div id="daily-card-sub" style="font-size:9px;color:rgba(247,241,232,0.5);margin-top:3px;">Tik voor een outfit van de stylist</div>
+      </div>
+      <div id="daily-card-weather" style="text-align:right;">
+        <div style="font-size:28px;" id="daily-weather-icon">👗</div>
+      </div>
     </div>
-    <div id="daily-card-weather" style="text-align:right;">
-      <div style="font-size:28px;" id="daily-weather-icon">👗</div>
+    <div id="daily-outfit-preview" style="display:none;padding:0 16px 14px;">
+      <div id="daily-outfit-items" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="logDailyOutfit()" style="flex:1;min-width:100px;padding:8px;background:rgba(255,255,255,0.15);border:none;border-radius:8px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--cream);">❖ Dit draag ik!</button>
+        <button onclick="refreshQuickOutfit()" style="padding:8px 12px;background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:14px;cursor:pointer;color:var(--cream);">&#x21bb;</button>
+        <button onclick="quickOutfitFeedback('te warm')" style="padding:8px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:9px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.65);">Te warm</button>
+        <button onclick="quickOutfitFeedback('al gedragen')" style="padding:8px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:9px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.65);">Al gedragen</button>
+        <button onclick="quickOutfitFeedback('geen mood')" style="padding:8px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:9px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.65);">Geen mood</button>
+      </div>
     </div>
   </div>
 
@@ -3149,7 +3161,15 @@ function generateTodayOutfits() {
         };
       })(itemIds, likeBtn2));
 
+
+      var feedbackBtn = document.createElement('button');
+      feedbackBtn.type = 'button';
+      feedbackBtn.style.cssText = 'padding:13px 10px;border:1.5px solid var(--cream-dark);background:var(--white);border-radius:12px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);';
+      feedbackBtn.textContent = '\u2715 Niet dit';
+      feedbackBtn.addEventListener('click', (function(ids3){ return function(){ showOutfitFeedbackPicker(ids3); }; })(itemIds.slice()));
+
       btnRow.appendChild(saveBtn);
+      btnRow.appendChild(feedbackBtn);
       btnRow.appendChild(selfieBtn);
       btnRow.appendChild(likeBtn2);
       card.appendChild(btnRow);
@@ -7225,6 +7245,45 @@ async function generateQuickOutfit(feedback){
     if(iDiv){iDiv.innerHTML=_quickOutfitIds.map(function(id){var nm=getItemName(id);var ph=photos[id]?'<img src="'+photos[id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:rgba(247,241,232,0.6);padding:2px;">'+nm.split(' ')[0]+'</span>';return '<div style="flex-shrink:0;width:52px;"><div style="width:52px;height:64px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">'+ph+'</div><div style="font-size:7px;color:rgba(247,241,232,0.6);text-align:center;margin-top:2px;">'+(nm.length>10?nm.substring(0,9)+'\u2026':nm)+'</div></div>';}).join('');}
     var pr=document.getElementById('daily-outfit-preview');if(pr)pr.style.display='block';
   }catch(e2){var s2=document.getElementById('daily-card-sub');if(s2)s2.textContent='Tik voor een outfitsuggestie';}
+}
+
+// ============ OUTFIT FEEDBACK PICKER ============
+function showOutfitFeedbackPicker(itemIds) {
+  var ex = document.getElementById('feedback-picker'); if(ex){ex.remove();return;}
+  var overlay = document.createElement('div');
+  overlay.id = 'feedback-picker';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.5);z-index:650;display:flex;align-items:flex-end;';
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;padding:20px 16px 40px;';
+  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:300;color:var(--brown);margin-bottom:6px;">Waarom niet?</div>'
+    + '<p style="font-size:11px;color:var(--muted);margin-bottom:14px;">De stylist leert hiervan voor volgende suggesties.</p>';
+  var reasons = [
+    ['\uD83C\uDF21\uFE0F Te warm voor vandaag','te warm'],
+    ['\uD83D\uDD01 Al recent gedragen','al gedragen'],
+    ['\uD83D\uDCAD Geen mood vandaag','geen mood'],
+    ['\u274C Kleuren kloppen niet','kleuren kloppen niet'],
+    ['\uD83D\uDC4D Verkeerde gelegenheid','verkeerde gelegenheid'],
+  ];
+  reasons.forEach(function(r){
+    var btn = document.createElement('button');
+    btn.style.cssText = 'width:100%;padding:13px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;color:var(--brown);text-align:left;margin-bottom:8px;';
+    btn.textContent = r[0];
+    btn.addEventListener('click', function(){
+      recordOutfitFeedback(itemIds, r[1]);
+      overlay.remove();
+      if(document.getElementById('panel-suggesties').classList.contains('active')){
+        setTimeout(function(){generateSuggestions(false);},400);
+      }
+    });
+    sheet.appendChild(btn);
+  });
+  var cb = document.createElement('button');
+  cb.style.cssText = 'width:100%;padding:11px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);';
+  cb.textContent = 'Annuleren'; cb.addEventListener('click',function(){overlay.remove();});
+  sheet.appendChild(cb); overlay.appendChild(sheet);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
 }
 
 // ============ COPY OUTFIT TO BOARD ============
