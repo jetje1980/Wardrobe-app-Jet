@@ -7305,11 +7305,7 @@ async function generateQuickOutfit(feedback){
   var recentW=new Set();
   for(var d=0;d<3;d++){var dd=new Date();dd.setDate(dd.getDate()-d);var ds=dd.toISOString().split('T')[0];(wornLog[ds]||[]).forEach(function(id){recentW.add(id);});}
   var wLines=allIt.map(function(i){var k=getTag(i.id,'kleur')||'';return i.name+(k?' ['+k+']':'')+(recentW.has(i.id)?' [RECENT]':'');}).join(', ');
-  var tempTxt=currentWeather?currentWeather.tempC+'\u00b0C':'onbekend';
-  var prompt='Je bent Griette\'s persoonlijke stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken.\n\n'
-    +'Weer: '+tempTxt+'\n'
-    +(feedback?'Vorige feedback: '+feedback+' \u2014 pas aan.\n':'')
-  // Apply daily prefs to item filtering
+  // Apply daily prefs BEFORE building prompt
   if (_dailyPrefBottom) allIt = allIt.filter(function(i2){
     if (i2.cat==='tops'||i2.cat==='shoes'||i2.cat==='bags'||i2.cat==='accessories') return true;
     var nm2=i2.name.toLowerCase();
@@ -7325,6 +7321,15 @@ async function generateQuickOutfit(feedback){
     if (_dailyPrefShoe==='laarzen') return nm3.includes('laars')||nm3.includes('boot')||nm3.includes('chelsea');
     return true;
   });
+  // Rebuild wLines after filtering
+  wLines = allIt.map(function(i){var k=getTag(i.id,'kleur')||'';return i.name+(k?' ['+k+']':'')+(recentW.has(i.id)?' [RECENT]':'');}).join(', ');
+  var tempTxt=currentWeather?currentWeather.tempC+'\u00b0C':'onbekend';
+  var prefTxt = (_dailyPrefBottom==='rok'?' Voorkeur: rok of jurk.':_dailyPrefBottom==='broek'?' Voorkeur: broek.':'')
+    + (_dailyPrefShoe?' Schoenen: '+_dailyPrefShoe+'.':'');
+  var prompt='Je bent Griette\'s persoonlijke stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken.\n\n'
+    +'Weer: '+tempTxt+'\n'
+    +(feedback?'Vorige feedback: '+feedback+' \u2014 pas aan.\n':'')
+    +(prefTxt?prefTxt+'\n':'')
     +'GARDEROBE: '+wLines+'\n\n'
     +((_dailyPrefBottom==='rok')?' Voorkeur: rok of jurk.':(_dailyPrefBottom==='broek')?' Voorkeur: broek.':'')
     +((_dailyPrefShoe)?'Schoenen: '+_dailyPrefShoe+'.\n':'')
