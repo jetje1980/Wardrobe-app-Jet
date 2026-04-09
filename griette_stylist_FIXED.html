@@ -382,6 +382,18 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
         <div style="font-size:28px;" id="daily-weather-icon">👗</div>
       </div>
     </div>
+    <!-- Quick mood selectors -->
+    <div style="padding:0 16px 10px;border-top:1px solid rgba(255,255,255,0.1);">
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(201,168,122,0.6);margin-bottom:6px;margin-top:8px;">Mood</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button id="dq-rok" onclick="setDailyPref('bottom','rok',this)" style="padding:5px 11px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);background:transparent;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.7);">Rok/jurk</button>
+        <button id="dq-broek" onclick="setDailyPref('bottom','broek',this)" style="padding:5px 11px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);background:transparent;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.7);">Broek</button>
+        <div style="width:1px;background:rgba(255,255,255,0.15);margin:0 1px;"></div>
+        <button id="dq-sneakers" onclick="setDailyPref('shoe','sneakers',this)" style="padding:5px 11px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);background:transparent;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.7);">Sneakers</button>
+        <button id="dq-sandalen" onclick="setDailyPref('shoe','sandalen',this)" style="padding:5px 11px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);background:transparent;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.7);">Sandalen</button>
+        <button id="dq-laarzen" onclick="setDailyPref('shoe','laarzen',this)" style="padding:5px 11px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);background:transparent;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:rgba(247,241,232,0.7);">Laarzen</button>
+      </div>
+    </div>
     <div id="daily-outfit-preview" style="display:none;padding:0 16px 14px;">
       <div id="daily-outfit-items" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -394,10 +406,6 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
     </div>
   </div>
 
-  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-    <button type="button" onclick="openWornTodayPicker()" style="width:100%;padding:11px 16px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:'Jost',sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">👗</span><span style="flex:1;text-align:left;">Wat heb ik vandaag gedragen?</span><span style="font-size:11px;color:var(--muted);">→</span></button>
-    <button type="button" onclick="showDailyInspirationTip()" style="width:100%;padding:11px 16px;background:linear-gradient(135deg,rgba(155,98,64,0.1),rgba(162,138,80,0.1));color:var(--brown);border:1.5px solid rgba(155,98,64,0.3);border-radius:12px;font-size:11px;font-family:'Jost',sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">✨</span><span style="flex:1;text-align:left;">Dagelijkse stijlinspiratie — wat speelt er nu?</span><span style="font-size:11px;color:var(--muted);">→</span></button>
-  </div>
 
   <div id="garderobe-content"></div>
   <button class="add-item-btn" onclick="openAddModal()">+ Eigen item toevoegen</button>
@@ -7214,6 +7222,39 @@ async function generateOutfitFromAnchor(boardId, anchorId, anchorName) {
 }
 
 // ============ QUICK OUTFIT OF THE DAY ============
+var _dailyPrefBottom = null; // 'rok' | 'broek' | null
+var _dailyPrefShoe = null;   // 'sneakers' | 'sandalen' | 'laarzen' | null
+
+function setDailyPref(type, val, btn) {
+  var btnMap = {bottom:['dq-rok','dq-broek'], shoe:['dq-sneakers','dq-sandalen','dq-laarzen']};
+  var activeStyle = 'rgba(255,255,255,0.25)';
+  if (type==='bottom') {
+    if (_dailyPrefBottom===val) { _dailyPrefBottom=null; }
+    else { _dailyPrefBottom=val; }
+    btnMap.bottom.forEach(function(id){
+      var b=document.getElementById(id);
+      if(!b) return;
+      var isActive = (id==='dq-'+_dailyPrefBottom);
+      b.style.background = isActive?activeStyle:'transparent';
+      b.style.color = isActive?'var(--cream)':'rgba(247,241,232,0.7)';
+      b.style.borderColor = isActive?'rgba(255,255,255,0.5)':'rgba(255,255,255,0.2)';
+    });
+  } else {
+    if (_dailyPrefShoe===val) { _dailyPrefShoe=null; }
+    else { _dailyPrefShoe=val; }
+    btnMap.shoe.forEach(function(id){
+      var b=document.getElementById(id);
+      if(!b) return;
+      var isActive = (id==='dq-'+_dailyPrefShoe);
+      b.style.background = isActive?activeStyle:'transparent';
+      b.style.color = isActive?'var(--cream)':'rgba(247,241,232,0.7)';
+      b.style.borderColor = isActive?'rgba(255,255,255,0.5)':'rgba(255,255,255,0.2)';
+    });
+  }
+  // Auto-generate with new pref
+  generateQuickOutfit(null);
+}
+
 var _quickOutfitIds = [];
 var outfitFeedback = {};
 
@@ -7268,7 +7309,25 @@ async function generateQuickOutfit(feedback){
   var prompt='Je bent Griette\'s persoonlijke stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken.\n\n'
     +'Weer: '+tempTxt+'\n'
     +(feedback?'Vorige feedback: '+feedback+' \u2014 pas aan.\n':'')
+  // Apply daily prefs to item filtering
+  if (_dailyPrefBottom) allIt = allIt.filter(function(i2){
+    if (i2.cat==='tops'||i2.cat==='shoes'||i2.cat==='bags'||i2.cat==='accessories') return true;
+    var nm2=i2.name.toLowerCase();
+    if (_dailyPrefBottom==='rok') return i2.cat==='jurken'||nm2.includes('rok')||nm2.includes('skirt')||nm2.includes('mini')||nm2.includes('maxi');
+    if (_dailyPrefBottom==='broek') return !nm2.includes('rok')&&!nm2.includes('skirt')&&i2.cat!=='jurken';
+    return true;
+  });
+  if (_dailyPrefShoe) allIt = allIt.filter(function(i3){
+    if (i3.cat!=='shoes') return true;
+    var nm3=i3.name.toLowerCase();
+    if (_dailyPrefShoe==='sneakers') return nm3.includes('sneaker')||nm3.includes('new balance')||nm3.includes('adidas')||nm3.includes('gympen');
+    if (_dailyPrefShoe==='sandalen') return nm3.includes('sandal')||nm3.includes('kitten')||nm3.includes('slipper')||nm3.includes('muil');
+    if (_dailyPrefShoe==='laarzen') return nm3.includes('laars')||nm3.includes('boot')||nm3.includes('chelsea');
+    return true;
+  });
     +'GARDEROBE: '+wLines+'\n\n'
+    +((_dailyPrefBottom==='rok')?' Voorkeur: rok of jurk.':(_dailyPrefBottom==='broek')?' Voorkeur: broek.':'')
+    +((_dailyPrefShoe)?'Schoenen: '+_dailyPrefShoe+'.\n':'')
     +'Stel 1 outfit voor. Geen recent gedragen items. MAX 4 items. Jurk = geen broek erbij.\n'
     +'Geef ALLEEN JSON: {"naam":"...","items":["exacte naam","exacte naam","exacte schoenen"],"reden":"1 zin"}';
   try{
@@ -7817,9 +7876,8 @@ function addMorningBannerBtn() {
   if (!gc) return;
   var existing = document.getElementById('morning-banner-btn');
   if (existing) return;
-  // Add "Ik droeg dit vandaag" quick-log button
-  var wornBtn = document.getElementById('worn-today-btn');
-  if (!wornBtn) {
+  // Add worn-today button (once)
+  if (!document.getElementById('worn-today-btn')) {
     var wb = document.createElement('button');
     wb.id = 'worn-today-btn';
     wb.type = 'button';
@@ -7828,17 +7886,17 @@ function addMorningBannerBtn() {
     wb.addEventListener('click', openWornTodayPicker);
     gc.insertBefore(wb, gc.firstChild);
   }
-  // Add "Ik droeg dit vandaag" quick-log button
-  var wornBtn = document.getElementById('worn-today-btn');
-  if (!wornBtn) {
-    var wb = document.createElement('button');
-    wb.id = 'worn-today-btn';
-    wb.type = 'button';
-    wb.style.cssText = 'width:100%;padding:11px 16px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:10px;';
-    wb.innerHTML = '<span style="font-size:16px;">👗</span><span style="flex:1;text-align:left;">Wat heb ik vandaag gedragen?</span><span style="font-size:11px;color:var(--muted);">→</span>';
-    wb.addEventListener('click', openWornTodayPicker);
-    gc.insertBefore(wb, gc.firstChild);
+  // Add daily inspiration button (once)
+  if (!document.getElementById('daily-inspo-btn')) {
+    var inspoB = document.createElement('button');
+    inspoB.id = 'daily-inspo-btn';
+    inspoB.type = 'button';
+    inspoB.style.cssText = 'width:100%;padding:11px 16px;background:linear-gradient(135deg,rgba(155,98,64,0.1),rgba(162,138,80,0.1));color:var(--brown);border:1.5px solid rgba(155,98,64,0.3);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:10px;';
+    inspoB.innerHTML = '<span style="font-size:16px;">✨</span><span style="flex:1;text-align:left;">Dagelijkse stijlinspiratie</span><span style="font-size:11px;color:var(--muted);">→</span>';
+    inspoB.addEventListener('click', showDailyInspirationTip);
+    gc.insertBefore(inspoB, gc.firstChild);
   }
+
   var btn = document.createElement('button');
   btn.id = 'morning-banner-btn';
   btn.type = 'button';
