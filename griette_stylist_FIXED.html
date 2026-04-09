@@ -431,7 +431,10 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 14px;">
     <div id="sug-title" style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--brown);">Vakantie / strand</div>
-    <button onclick="generateSuggestions(false)" style="display:flex;align-items:center;gap:5px;padding:8px 14px;background:var(--brown);color:var(--cream);border:none;border-radius:20px;font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;letter-spacing:1px;">✦ Genereer</button>
+    <div style="display:flex;gap:6px;">
+      <button onclick="openOutfitBuilder()" style="padding:8px 12px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:20px;font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;" title="Zelf samenstellen">✏️ Zelf</button>
+      <button onclick="generateSuggestions(false)" style="display:flex;align-items:center;gap:5px;padding:8px 14px;background:var(--brown);color:var(--cream);border:none;border-radius:20px;font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;letter-spacing:1px;">❖ Genereer</button>
+    </div>
   </div>
   <div id="weather-sug-badge" style="margin-bottom:12px;display:none;"></div>
 
@@ -3129,7 +3132,7 @@ function generateTodayOutfits() {
     const picked = [];
     for (const c of combos) {
       const key = c.top.id + '_' + c.bottom.id;
-      if (!seen.has(key) && c.score > -5) {
+      if (!seen.has(key) && c.score > -15) {
         seen.add(key);
         picked.push(c);
         if (picked.length >= 3) break;
@@ -7478,6 +7481,218 @@ function filterBottomsByPref(bottomPool) {
     return rokPlusJurken.length > 0 ? rokPlusJurken : bottomPool;
   }
   return prefBottom==='broek' ? (broekItems.length>0?broekItems:bottomPool) : bottomPool;
+}
+
+// ============ OUTFIT BUILDER (ZELF SAMENSTELLEN) ============
+var _builderItems = []; // selected item IDs
+
+function openOutfitBuilder() {
+  var existing = document.getElementById('outfit-builder-overlay');
+  if (existing) existing.remove();
+  _builderItems = [];
+
+  var overlay = document.createElement('div');
+  overlay.id = 'outfit-builder-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:650;display:flex;align-items:flex-end;';
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 16px 50px;';
+
+  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);margin-bottom:4px;">\u270f\ufe0f Zelf samenstellen</div>'
+    + '<p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Selecteer 1 of meer items. De stylist vult de rest aan.</p>'
+    + '<div id="builder-selected" style="display:flex;gap:6px;min-height:72px;padding:8px;background:var(--white);border-radius:12px;border:1.5px dashed var(--cream-dark);margin-bottom:12px;overflow-x:auto;scrollbar-width:none;align-items:center;">'
+    + '<span style="font-size:10px;color:var(--muted);font-style:italic;">Tik items aan om toe te voegen...</span>'
+    + '</div>'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Kies items</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;" id="builder-grid"></div>';
+
+  // Populate grid
+  var allIt = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+  var catOrder = ['tops','bottoms','jurken','layers','shoes','bags','accessories'];
+  var catLabels = {tops:'Tops',bottoms:'Rokken & Broeken',jurken:'Jurken',layers:'Laagjes',shoes:'Schoenen',bags:'Tassen',accessories:'Accessoires'};
+  var sorted = allIt.slice().sort(function(a,b){ return (catOrder.indexOf(a.cat)||99)-(catOrder.indexOf(b.cat)||99); });
+
+  setTimeout(function(){
+    var grid = document.getElementById('builder-grid');
+    if (!grid) return;
+    var lastCat = null;
+    sorted.forEach(function(item) {
+      if (item.cat !== lastCat) {
+        lastCat = item.cat;
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'grid-column:1/-1;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-top:8px;margin-bottom:2px;';
+        lbl.textContent = catLabels[item.cat]||item.cat;
+        grid.appendChild(lbl);
+      }
+      var div = document.createElement('div');
+      div.id = 'bld-'+item.id;
+      div.style.cssText = 'border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid var(--cream-dark);position:relative;';
+      var ph = photos[item.id]?'<img src="'+photos[item.id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);padding:3px;text-align:center;display:block;">'+item.name.split(' ')[0]+'</span>';
+      div.innerHTML = '<div style="aspect-ratio:1;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;">'+ph+'</div>'
+        +'<div style="font-size:7px;color:var(--brown);text-align:center;padding:3px 2px;">'+( item.name.length>13?item.name.substring(0,12)+'\u2026':item.name)+'</div>';
+      div.addEventListener('click', (function(itm){ return function(){ toggleBuilderItem(itm); }; })(item));
+      grid.appendChild(div);
+    });
+  }, 50);
+
+  // Action buttons
+  var genBtn = document.createElement('button');
+  genBtn.id = 'builder-gen-btn';
+  genBtn.style.cssText = 'width:100%;padding:13px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:16px;';
+  genBtn.textContent = '\u2756 Stylist vult aan';
+  genBtn.addEventListener('click', function(){ generateFromBuilder(); });
+
+  var logBtn = document.createElement('button');
+  logBtn.style.cssText = 'width:100%;padding:11px;background:var(--white);color:var(--brown);border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;margin-top:8px;';
+  logBtn.textContent = '\u2756 Direct loggen als vandaag gedragen';
+  logBtn.addEventListener('click', function(){
+    if (!_builderItems.length) { showToast('Selecteer eerst items'); return; }
+    logWornItems(_builderItems);
+    overlay.remove();
+    showToast('\u2756 Outfit gelogd voor vandaag');
+  });
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'width:100%;padding:10px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-top:4px;';
+  cancelBtn.textContent = 'Annuleren';
+  cancelBtn.addEventListener('click', function(){ overlay.remove(); });
+
+  sheet.appendChild(genBtn);
+  sheet.appendChild(logBtn);
+  sheet.appendChild(cancelBtn);
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function toggleBuilderItem(item) {
+  var idx = _builderItems.indexOf(item.id);
+  var div = document.getElementById('bld-'+item.id);
+  if (idx !== -1) {
+    _builderItems.splice(idx, 1);
+    if (div) { div.style.borderColor='var(--cream-dark)'; var ck=div.querySelector('.bld-check'); if(ck)ck.remove(); }
+  } else {
+    _builderItems.push(item.id);
+    if (div) {
+      div.style.borderColor='var(--brown-warm)';
+      var c=document.createElement('div');
+      c.className='bld-check';
+      c.style.cssText='position:absolute;top:2px;right:2px;width:16px;height:16px;background:var(--brown-warm);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;z-index:2;';
+      c.textContent='\u2713';
+      div.appendChild(c);
+    }
+  }
+  // Update selected preview
+  var sel = document.getElementById('builder-selected');
+  if (!sel) return;
+  if (!_builderItems.length) {
+    sel.innerHTML='<span style="font-size:10px;color:var(--muted);font-style:italic;">Tik items aan om toe te voegen...</span>';
+  } else {
+    sel.innerHTML = _builderItems.map(function(id){
+      var nm=getItemName(id);
+      var ph=photos[id]?'<img src="'+photos[id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);padding:2px;">'+nm.split(' ')[0]+'</span>';
+      return '<div style="flex-shrink:0;width:52px;"><div style="width:52px;height:64px;border-radius:8px;overflow:hidden;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;">'+ph+'</div><div style="font-size:7px;color:var(--brown);text-align:center;margin-top:2px;">'+(nm.length>9?nm.substring(0,8)+'\u2026':nm)+'</div></div>';
+    }).join('');
+  }
+  var btn = document.getElementById('builder-gen-btn');
+  if (btn) btn.textContent = _builderItems.length ? '\u2756 Stylist vult aan (' + _builderItems.length + ' item' + (_builderItems.length>1?'s':'') + ' gekozen)' : '\u2756 Stylist vult aan';
+}
+
+async function generateFromBuilder() {
+  var overlay = document.getElementById('outfit-builder-overlay');
+  if (overlay) overlay.remove();
+
+  var allItems = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+  var chosen = _builderItems.map(function(id){
+    var it = allItems.find(function(i){ return i.id===id; });
+    if (!it) return null;
+    var k=getTag(id,'kleur')||''; var s=getStructuurKlasse(id)||'';
+    return it.name+(k?' ['+k+']':'')+(s?' ['+s+']':'');
+  }).filter(Boolean);
+
+  var rest = allItems.filter(function(i){ return !_builderItems.includes(i.id); });
+  var restList = rest.map(function(i){ var k=getTag(i.id,'kleur')||''; return i.name+(k?' ['+k+']':''); }).join(', ');
+
+  showToast('\u2756 Stylist stelt outfit samen...');
+
+  var prompt = 'Je bent Griette\'s stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken.\n\n'
+    + (chosen.length ? 'GEKOZEN ITEMS: ' + chosen.join(', ') + '\n' : '')
+    + (chosen.length ? 'Bouw een complete outfit RONDOM deze gekozen items.\n' : 'Stel 1 verrassende complete outfit voor.\n')
+    + 'AANVULLENDE ITEMS BESCHIKBAAR: ' + restList + '\n\n'
+    + 'Maak 3 verschillende complete outfits. ' + (chosen.length ? 'De gekozen items MOETEN erin. ' : '') + 'MAX 4 items per outfit.\n'
+    + 'Varieer en maak het spannend. Geef ALLEEN JSON:\n'
+    + '[{"naam":"...","items":["exacte naam","exacte naam","exacte schoenen"],"tip":"stijltip"}]';
+
+  try {
+    var res = await fetch('https://griette-stylist.griette.workers.dev',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,messages:[{role:'user',content:prompt}]})
+    });
+    var data = await res.json();
+    var text = (data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var clean = text.replace(/^[^[]*/,'').replace(/[^\]]*$/,'');
+    var outfits = JSON.parse(clean);
+
+    // Show results in picker
+    var ov2 = document.createElement('div');
+    ov2.id = 'builder-result-overlay';
+    ov2.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:700;display:flex;align-items:flex-end;';
+    var sh2 = document.createElement('div');
+    sh2.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:20px 16px 50px;';
+    sh2.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+      +'<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);margin-bottom:12px;">\u2756 Jouw outfits</div>';
+
+    outfits.forEach(function(sug,idx){
+      var mIds=(sug.items||[]).map(function(name){
+        var nl=name.toLowerCase().trim();
+        var f=allItems.find(function(i){return i.name.toLowerCase()===nl;})
+          ||allItems.reduce(function(best,i){var words=i.name.toLowerCase().split(' ').filter(function(w){return w.length>3;});var hits=words.filter(function(w){return nl.includes(w);}).length;var score=words.length?hits/words.length:0;return score>0.5&&score>(best?best.score:0)?{item:i,score:score}:best;},null);
+        if(f&&f.item)f=f.item;return f?f.id:null;
+      }).filter(Boolean);
+
+      var card=document.createElement('div');
+      card.style.cssText='background:var(--white);border-radius:12px;padding:12px;margin-bottom:10px;border:1.5px solid var(--cream-dark);';
+      var photos2=mIds.slice(0,4).map(function(id){var nm=getItemName(id);var ph=photos[id]?'<img src="'+photos[id]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);padding:2px;">'+nm.split(' ')[0]+'</span>';return '<div style="width:48px;height:58px;border-radius:7px;overflow:hidden;background:var(--cream-dark);flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+ph+'</div>';}).join('');
+      card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--brown);margin-bottom:6px;">'+(sug.naam||'Look '+(idx+1))+'</div>'
+        +'<div style="display:flex;gap:5px;margin-bottom:6px;">'+photos2+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);margin-bottom:6px;">'+(sug.items||[]).join(' \u00b7 ')+'</div>'
+        +(sug.tip?'<div style="font-size:10px;color:var(--brown-warm);font-style:italic;margin-bottom:8px;">\u2756 '+sug.tip+'</div>':'');
+
+      var actRow=document.createElement('div');
+      actRow.style.cssText='display:flex;gap:6px;';
+
+      var logBtn2=document.createElement('button');
+      logBtn2.style.cssText='flex:1;padding:8px;background:var(--brown);color:var(--cream);border:none;border-radius:8px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;';
+      logBtn2.textContent='\u2756 Vandaag dragen';
+      logBtn2.addEventListener('click',(function(ids){
+        return function(){ logWornItems(ids); ov2.remove(); showToast('\u2756 Outfit gelogd!'); };
+      })(mIds));
+
+      var saveBtn4=document.createElement('button');
+      saveBtn4.style.cssText='padding:8px 10px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:8px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--brown);';
+      saveBtn4.textContent='+ Board';
+      saveBtn4.addEventListener('click',(function(ids,naam){
+        return function(){ showSaveSugToBoardPicker(ids); };
+      })(mIds,sug.naam));
+
+      actRow.appendChild(logBtn2);
+      actRow.appendChild(saveBtn4);
+      card.appendChild(actRow);
+      sh2.appendChild(card);
+    });
+
+    var closeBtn2=document.createElement('button');
+    closeBtn2.style.cssText='width:100%;padding:11px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-top:4px;';
+    closeBtn2.textContent='Sluiten';
+    closeBtn2.addEventListener('click',function(){ov2.remove();});
+    sh2.appendChild(closeBtn2);
+    ov2.appendChild(sh2);
+    ov2.addEventListener('click',function(e){if(e.target===ov2)ov2.remove();});
+    document.body.appendChild(ov2);
+
+  } catch(err) {
+    showToast('\u26a0 Kon geen outfit maken: ' + err.message);
+  }
 }
 
 // ============ COPY OUTFIT TO BOARD ============
