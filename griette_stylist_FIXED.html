@@ -3109,9 +3109,10 @@ function generateTodayOutfits() {
 
     // Generate combos with anchor fixed
     let combos = [];
-    const topList = filteredTops.slice(0,8);
-    const bottomList = filteredBottoms.slice(0,8);
-    const shoeList = filteredShoes.slice(0,6);
+    // Fallback: if filtered pool is empty, use unfiltered
+    const topList = (filteredTops.length > 0 ? filteredTops : getPool('tops')).slice(0,10);
+    const bottomList = (filteredBottoms.length > 0 ? filteredBottoms : getPool('bottoms')).slice(0,10);
+    const shoeList = (filteredShoes.length > 0 ? filteredShoes : getPool('shoes')).slice(0,8);
 
     for (const top of topList) {
       for (const bottom of bottomList) {
@@ -3132,7 +3133,7 @@ function generateTodayOutfits() {
     const picked = [];
     for (const c of combos) {
       const key = c.top.id + '_' + c.bottom.id;
-      if (!seen.has(key) && c.score > -15) {
+      if (!seen.has(key)) {
         seen.add(key);
         picked.push(c);
         if (picked.length >= 3) break;
