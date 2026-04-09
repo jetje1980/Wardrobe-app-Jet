@@ -426,6 +426,20 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
     <button onclick="generateSuggestions(false)" style="display:flex;align-items:center;gap:5px;padding:8px 14px;background:var(--brown);color:var(--cream);border:none;border-radius:20px;font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;letter-spacing:1px;">✦ Genereer</button>
   </div>
   <div id="weather-sug-badge" style="margin-bottom:12px;display:none;"></div>
+
+  <!-- Basis voorkeur: bottom + schoen -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;">Basis</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="pref-btn" id="pref-rok" onclick="setPrefBottom('rok',this)" style="padding:5px 10px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;color:var(--muted);">Rok</button>
+      <button class="pref-btn" id="pref-broek" onclick="setPrefBottom('broek',this)" style="padding:5px 10px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;color:var(--muted);">Broek</button>
+      <div style="width:1px;background:var(--cream-dark);margin:0 2px;"></div>
+      <button class="pref-btn" id="pref-sneakers" onclick="setPrefShoe('sneakers',this)" style="padding:5px 10px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;color:var(--muted);">Sneakers</button>
+      <button class="pref-btn" id="pref-sandalen" onclick="setPrefShoe('sandalen',this)" style="padding:5px 10px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;color:var(--muted);">Sandalen</button>
+      <button class="pref-btn" id="pref-laarzen" onclick="setPrefShoe('laarzen',this)" style="padding:5px 10px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;color:var(--muted);">Laarzen</button>
+    </div>
+  </div>
+
   <div id="sug-results"></div>
   <button class="gen-more-btn" id="gen-more-btn" onclick="generateMore()" style="display:none;">+ Meer outfits genereren</button>
 </div>
@@ -2175,7 +2189,20 @@ function showPanel(name, btn) {
   // Hide chat input bar unless on chat
   var inputBar = document.getElementById('chat-input-bar');
   if (inputBar) inputBar.style.display = name === 'chat' ? 'flex' : 'none';
-  if (name === 'suggesties') generateSuggestions();
+  if (name === 'suggesties') {
+    generateSuggestions();
+    // Restore pref button visual state
+    setTimeout(function(){
+      if (prefBottom) {
+        var btn = document.getElementById('pref-'+prefBottom);
+        if(btn){btn.style.background='var(--brown)';btn.style.color='var(--cream)';btn.style.borderColor='var(--brown)';}
+      }
+      if (prefShoe) {
+        var btn2 = document.getElementById('pref-'+prefShoe);
+        if(btn2){btn2.style.background='var(--brown)';btn2.style.color='var(--cream)';btn2.style.borderColor='var(--brown)';}
+      }
+    }, 100);
+  }
   if (name === 'week') { loadWeekPlan(); buildWeekPlanner(); }
   if (name === 'garderobe') setTimeout(function(){ applyGarderobeFilter(); addMorningBannerBtn(); }, 200);
   if (name === 'regels') buildOccasionManager();
@@ -3323,6 +3350,8 @@ function closeTodayIfOutside(e) {
 // ============ SUGGESTION ENGINE ============
 
 let activeOccasion = 'vakantie';
+let prefBottom = null;  // 'rok' | 'broek' | null
+let prefShoe = null;    // 'sneakers' | 'sandalen' | 'laarzen' | null
 
 const occasionTitles = {
   vakantie: 'Vakantie / strand',
@@ -4091,8 +4120,10 @@ function generateSuggestions(append = false) {
       return true;
     }
     const tops = getPool('tops').filter(i => _seasonOk(i,'tops'));
-    const bottoms = getPool('bottoms').filter(i => _seasonOk(i,'bottoms'));
-    const shoes = getPool('shoes');
+    const bottomsAll = getPool('bottoms').filter(i => _seasonOk(i,'bottoms'));
+    const bottoms = filterBottomsByPref(bottomsAll);
+    const shoesAll = getPool('shoes');
+    const shoes = getShoesByPref(shoesAll);
     const bags = getPool('bags');
     const layers = getPool('layers').filter(i => !dressIds.includes(i.id) && (_isZomer ? !_winterOnly.includes(i.id) : true));
 
@@ -4173,7 +4204,7 @@ function generateSuggestions(append = false) {
     const picked = [];
     for (const c of combos) {
       const key = c.top.id + '_' + c.bottom.id + '_' + (c.shoe?.id||'');
-      if (!shownComboKeys.has(key) && !seenTopBottom.has(c.top.id + '_' + c.bottom.id) && c.score > -5) {
+      if (!shownComboKeys.has(key) && !seenTopBottom.has(c.top.id + '_' + c.bottom.id) && c.score > -10) {
         if (!seenShoes.has(c.shoe?.id) || picked.length >= 3) {
           seenTopBottom.add(c.top.id + '_' + c.bottom.id);
           seenShoes.add(c.shoe?.id);
@@ -4183,13 +4214,27 @@ function generateSuggestions(append = false) {
         }
       }
     }
-    if (picked.length < 5) {
+    // Fill to 4 with relaxed constraints
+    if (picked.length < 4) {
       for (const c of combos) {
         const key = c.top.id + '_' + c.bottom.id + '_' + (c.shoe?.id||'');
-        if (!shownComboKeys.has(key) && c.score > -5) {
+        if (!shownComboKeys.has(key) && c.score > -15) {
           shownComboKeys.add(key);
           picked.push(c);
-          if (picked.length >= 5) break;
+          if (picked.length >= 4) break;
+        }
+      }
+    }
+    // Last resort: clear cache and pick fresh
+    if (picked.length < 4) {
+      shownComboKeys.clear();
+      for (const c of combos) {
+        const key = c.top.id + '_' + c.bottom.id + '_' + (c.shoe?.id||'');
+        if (!seenTopBottom.has(c.top.id + '_' + c.bottom.id)) {
+          shownComboKeys.add(key);
+          seenTopBottom.add(c.top.id + '_' + c.bottom.id);
+          picked.push(c);
+          if (picked.length >= 4) break;
         }
       }
     }
@@ -7273,6 +7318,8 @@ function showOutfitFeedbackPicker(itemIds) {
       recordOutfitFeedback(itemIds, r[1]);
       overlay.remove();
       if(document.getElementById('panel-suggesties').classList.contains('active')){
+        shownComboKeys.clear();
+        resetUsageCounts();
         setTimeout(function(){generateSuggestions(false);},400);
       }
     });
@@ -7284,6 +7331,89 @@ function showOutfitFeedbackPicker(itemIds) {
   sheet.appendChild(cb); overlay.appendChild(sheet);
   overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
   document.body.appendChild(overlay);
+}
+
+// ============ OUTFIT BASIS VOORKEUR ============
+function setPrefBottom(val, btn) {
+  if (prefBottom === val) {
+    prefBottom = null;
+    document.querySelectorAll('#pref-rok,#pref-broek').forEach(function(b){
+      b.style.background='var(--white)'; b.style.color='var(--muted)'; b.style.borderColor='var(--cream-dark)';
+    });
+  } else {
+    prefBottom = val;
+    document.querySelectorAll('#pref-rok,#pref-broek').forEach(function(b){
+      b.style.background='var(--white)'; b.style.color='var(--muted)'; b.style.borderColor='var(--cream-dark)';
+    });
+    btn.style.background='var(--brown)'; btn.style.color='var(--cream)'; btn.style.borderColor='var(--brown)';
+  }
+  shownComboKeys.clear(); resetUsageCounts();
+  generateSuggestions(false);
+}
+
+function setPrefShoe(val, btn) {
+  if (prefShoe === val) {
+    prefShoe = null;
+    document.querySelectorAll('#pref-sneakers,#pref-sandalen,#pref-laarzen').forEach(function(b){
+      b.style.background='var(--white)'; b.style.color='var(--muted)'; b.style.borderColor='var(--cream-dark)';
+    });
+  } else {
+    prefShoe = val;
+    document.querySelectorAll('#pref-sneakers,#pref-sandalen,#pref-laarzen').forEach(function(b){
+      b.style.background='var(--white)'; b.style.color='var(--muted)'; b.style.borderColor='var(--cream-dark)';
+    });
+    btn.style.background='var(--brown)'; btn.style.color='var(--cream)'; btn.style.borderColor='var(--brown)';
+  }
+  shownComboKeys.clear(); resetUsageCounts();
+  generateSuggestions(false);
+}
+
+// Map shoe preference to shoe IDs
+function getShoesByPref(shoePool) {
+  if (!prefShoe) return shoePool;
+  var sneakerIds = ['new-balance'];
+  var sandaalIds = ['zwarte-sandaal','bruine-sandaal','zwarte-suede','bruine-suede','zwarte-kitten','bruine-kitten','choco-kitten'];
+  var laarsIds = []; // filled dynamically from tags
+  // Also check tags for custom items
+  var allShoes = getAllItems().filter(function(i){ return i.cat==='shoes'; });
+  allShoes.forEach(function(i){
+    var nm = i.name.toLowerCase();
+    var tag = getTag(i.id,'schoentype')||'';
+    var isSneaker = nm.includes('sneaker')||nm.includes('new balance')||nm.includes('adidas')||nm.includes('nike')||nm.includes('gym')||nm.includes('gympen')||tag==='sneakers';
+    var isSandaal = nm.includes('sandal')||nm.includes('slipper')||nm.includes('kitten')||nm.includes('teen')||nm.includes('muil')||nm.includes('espadrille')||tag==='sandalen';
+    var isLaars = nm.includes('laars')||nm.includes('boot')||nm.includes('chelsea')||nm.includes('western')||nm.includes('cowboy')||nm.includes('enkellaar')||tag==='laarzen';
+    if (prefShoe==='sneakers' && isSneaker) sneakerIds.push(i.id);
+    if (prefShoe==='sandalen' && isSandaal) sandaalIds.push(i.id);
+    if (prefShoe==='laarzen' && isLaars) laarsIds.push(i.id);
+  });
+  var preferred = [];
+  var rest = [];
+  shoePool.forEach(function(shoe){
+    var ids = prefShoe==='sneakers'?sneakerIds:prefShoe==='sandalen'?sandaalIds:laarsIds;
+    if (ids.includes(shoe.id)) preferred.push(shoe);
+    else rest.push(shoe);
+  });
+  return preferred.length > 0 ? preferred : shoePool; // fallback if no match
+}
+
+// Map bottom preference to bottoms filter
+function filterBottomsByPref(bottomPool) {
+  if (!prefBottom) return bottomPool;
+  // Determine which bottoms are rokken vs broeken by name/tag
+  var rokItems = []; var broekItems = [];
+  bottomPool.forEach(function(i){
+    var nm = i.name.toLowerCase();
+    var cat2 = getTag(i.id,'pasvorm')||'';
+    if (nm.includes('rok')||nm.includes('skirt')||nm.includes('mini')||nm.includes('maxi rok')) rokItems.push(i);
+    else broekItems.push(i);
+  });
+  // Also include jurken when rok is selected
+  if (prefBottom === 'rok') {
+    var jurken2 = getAllItems().filter(function(i){ return i.cat==='jurken' && !deletedItemIds.has(i.id); });
+    var rokPlusJurken = rokItems.concat(jurken2);
+    return rokPlusJurken.length > 0 ? rokPlusJurken : bottomPool;
+  }
+  return prefBottom==='broek' ? (broekItems.length>0?broekItems:bottomPool) : bottomPool;
 }
 
 // ============ COPY OUTFIT TO BOARD ============
