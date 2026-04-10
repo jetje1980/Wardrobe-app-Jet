@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Stijl Studio — Jouw Digitale Stylist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #FDFAF6;
+  --cream2: #F4EDE3;
+  --ink: #1C1612;
+  --ink2: #4A3F35;
+  --terra: #C4714A;
+  --terra-light: #E8C4AC;
+  --warm: #8B6F5E;
+  --soft: #D4C4B8;
+  --white: #FFFFFF;
+  --shadow: rgba(28,22,18,0.12);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;background:var(--cream)}
+body{
+  font-family:var(--font-body);
+  background:var(--cream);
+  color:var(--ink);
+  height:100%;
+  max-width:430px;
+  margin:0 auto;
+  position:relative;
+  overflow:hidden;
+}
+
+/* ── ONBOARDING ─────────────────────────────────────────── */
+#onboarding{
+  position:fixed;inset:0;
+  background:var(--cream);
+  z-index:1000;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.ob-header{
+  padding:env(safe-area-inset-top,20px) 24px 0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.ob-logo{
+  font-family:var(--font-display);
+  font-size:18px;letter-spacing:.08em;color:var(--ink2);
+  font-weight:300;font-style:italic;
+}
+.ob-progress{
+  display:flex;gap:5px;align-items:center;
+}
+.ob-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--soft);transition:all .3s;
+}
+.ob-dot.active{background:var(--terra);transform:scale(1.4)}
+.ob-dot.done{background:var(--terra-light)}
+
+.ob-slide{
+  flex:1;display:flex;flex-direction:column;
+  padding:0 24px 24px;
+  overflow-y:auto;
+  animation:fadeUp .4s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.ob-eyebrow{
+  font-family:var(--font-body);font-size:11px;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--terra);margin-top:32px;margin-bottom:8px;
+  font-weight:500;
+}
+.ob-title{
+  font-family:var(--font-display);
+  font-size:34px;line-height:1.15;
+  font-weight:400;color:var(--ink);
+  margin-bottom:8px;
+}
+.ob-title em{font-style:italic;color:var(--terra)}
+.ob-sub{
+  font-size:14px;color:var(--ink2);line-height:1.6;
+  margin-bottom:28px;font-weight:300;
+}
+
+/* Name input */
+.ob-name-input{
+  width:100%;
+  font-family:var(--font-display);font-size:32px;
+  border:none;border-bottom:2px solid var(--soft);
+  background:transparent;color:var(--ink);
+  padding:8px 0;outline:none;
+  font-style:italic;font-weight:300;
+  transition:border-color .2s;
+}
+.ob-name-input:focus{border-color:var(--terra)}
+.ob-name-input::placeholder{color:var(--soft)}
+
+/* Option cards — grid */
+.ob-cards{
+  display:grid;gap:10px;
+  margin-bottom:8px;
+}
+.ob-cards.cols2{grid-template-columns:1fr 1fr}
+.ob-cards.cols3{grid-template-columns:1fr 1fr 1fr}
+.ob-card{
+  background:var(--white);
+  border:2px solid transparent;
+  border-radius:var(--radius);
+  padding:16px 12px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+  box-shadow:0 2px 8px var(--shadow);
+  user-select:none;
+  position:relative;
+}
+.ob-card:active{transform:scale(.97)}
+.ob-card.selected{
+  border-color:var(--terra);
+  background:linear-gradient(135deg,#FFF8F4,#FDF0E8);
+  box-shadow:0 4px 16px rgba(196,113,74,.2);
+}
+.ob-card-emoji{font-size:28px;margin-bottom:8px;display:block;line-height:1}
+.ob-card-label{
+  font-size:13px;font-weight:500;color:var(--ink);
+  line-height:1.3;
+}
+.ob-card-sub{font-size:11px;color:var(--ink2);margin-top:3px;font-weight:300}
+.ob-card .check{
+  position:absolute;top:8px;right:8px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--terra);color:white;
+  font-size:10px;display:none;
+  align-items:center;justify-content:center;
+}
+.ob-card.selected .check{display:flex}
+
+/* Color swatches */
+.ob-colors{
+  display:flex;flex-wrap:wrap;gap:10px;
+  margin-bottom:8px;
+}
+.ob-color{
+  width:52px;height:52px;border-radius:50%;
+  cursor:pointer;border:3px solid transparent;
+  transition:all .2s;position:relative;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.ob-color:active{transform:scale(.92)}
+.ob-color.selected{border-color:var(--terra);transform:scale(1.1)}
+.ob-color .check{
+  position:absolute;inset:0;display:none;
+  align-items:center;justify-content:center;
+  font-size:16px;
+}
+.ob-color.selected .check{display:flex}
+
+/* Chips */
+.ob-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.ob-chip{
+  padding:10px 18px;border-radius:100px;
+  border:2px solid var(--soft);
+  font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .2s;background:var(--white);
+  color:var(--ink2);user-select:none;
+}
+.ob-chip:active{transform:scale(.96)}
+.ob-chip.selected{
+  background:var(--terra);border-color:var(--terra);
+  color:white;
+}
+
+/* Vibe cards — large */
+.ob-vibes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ob-vibe{
+  height:110px;border-radius:var(--radius);
+  border:2px solid transparent;
+  cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  user-select:none;position:relative;overflow:hidden;
+}
+.ob-vibe:active{transform:scale(.97)}
+.ob-vibe.selected{border-color:var(--terra)}
+.ob-vibe-bg{
+  position:absolute;inset:0;
+  border-radius:calc(var(--radius) - 2px);
+}
+.ob-vibe-content{position:relative;z-index:1;text-align:center}
+.ob-vibe-emoji{font-size:30px;margin-bottom:6px;display:block}
+.ob-vibe-label{font-size:13px;font-weight:600;color:white;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.ob-vibe .check{
+  position:absolute;top:8px;right:8px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--terra);color:white;font-size:11px;
+  display:none;align-items:center;justify-content:center;
+  z-index:2;
+}
+.ob-vibe.selected .check{display:flex}
+
+/* Bottom nav of onboarding */
+.ob-footer{
+  padding:16px 24px calc(env(safe-area-inset-bottom,16px) + 16px);
+  display:flex;gap:12px;align-items:center;
+}
+.ob-btn-primary{
+  flex:1;height:52px;border-radius:100px;
+  background:var(--terra);color:white;
+  border:none;font-family:var(--font-body);
+  font-size:15px;font-weight:600;cursor:pointer;
+  transition:all .2s;letter-spacing:.03em;
+}
+.ob-btn-primary:active{transform:scale(.98);background:#B5623B}
+.ob-btn-primary:disabled{background:var(--soft);cursor:not-allowed}
+.ob-btn-back{
+  width:52px;height:52px;border-radius:50%;
+  background:var(--cream2);border:none;
+  font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;color:var(--ink2);
+}
+.ob-btn-back:active{transform:scale(.95)}
+
+/* Welcome screen */
+.ob-welcome{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+}
+.ob-welcome-circle{
+  width:120px;height:120px;border-radius:50%;
+  background:linear-gradient(135deg,var(--terra),var(--warm));
+  display:flex;align-items:center;justify-content:center;
+  font-size:52px;margin-bottom:28px;
+  box-shadow:0 8px 32px rgba(196,113,74,.3);
+}
+.ob-dna-tags{
+  display:flex;flex-wrap:wrap;gap:8px;
+  justify-content:center;margin:20px 0;
+}
+.ob-dna-tag{
+  padding:8px 16px;border-radius:100px;
+  background:var(--cream2);font-size:13px;
+  font-weight:500;color:var(--ink);
+}
+
+/* ── MAIN APP ───────────────────────────────────────────── */
+#app{
+  display:none;flex-direction:column;
+  height:100vh;height:100dvh;
+  background:var(--cream);
+}
+
+/* Header */
+.app-header{
+  padding:calc(env(safe-area-inset-top,16px) + 8px) 20px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--cream);
+  border-bottom:1px solid var(--cream2);
+}
+.app-logo{
+  font-family:var(--font-display);font-size:20px;
+  font-style:italic;font-weight:300;color:var(--ink);
+  letter-spacing:.04em;
+}
+.app-logo span{color:var(--terra)}
+.header-right{display:flex;gap:8px;align-items:center}
+.weather-chip{
+  display:flex;align-items:center;gap:5px;
+  background:var(--cream2);border-radius:100px;
+  padding:5px 12px;font-size:12px;font-weight:500;
+  color:var(--ink2);cursor:pointer;
+}
+.avatar-btn{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--terra),var(--warm));
+  border:none;cursor:pointer;color:white;
+  font-size:13px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Content area */
+.app-content{
+  flex:1;overflow:hidden;position:relative;
+}
+.tab-pane{
+  position:absolute;inset:0;
+  overflow-y:auto;
+  display:none;
+  padding-bottom:80px;
+}
+.tab-pane.active{display:block}
+
+/* Bottom nav */
+.bottom-nav{
+  display:flex;align-items:stretch;
+  background:var(--white);
+  border-top:1px solid var(--cream2);
+  padding-bottom:env(safe-area-inset-bottom,0);
+  box-shadow:0 -4px 20px rgba(28,22,18,.06);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:10px 0 12px;cursor:pointer;
+  transition:all .15s;border:none;background:none;
+  gap:3px;
+}
+.nav-item:active{background:var(--cream2)}
+.nav-icon{font-size:22px;transition:transform .2s;line-height:1}
+.nav-label{font-size:10px;font-weight:500;color:var(--soft);letter-spacing:.04em;font-family:var(--font-body)}
+.nav-item.active .nav-label{color:var(--terra)}
+.nav-item.active .nav-icon{transform:scale(1.1)}
+
+/* ── GARDEROBE TAB ──────────────────────────────────────── */
+.section-header{
+  padding:20px 20px 12px;
+  display:flex;align-items:flex-end;justify-content:space-between;
+}
+.section-title{
+  font-family:var(--font-display);font-size:28px;
+  font-weight:400;color:var(--ink);
+}
+.section-count{
+  font-size:12px;color:var(--ink2);font-weight:500;
+  margin-bottom:4px;
+}
+
+/* Dagkaart */
+.dagkaart{
+  margin:0 16px 16px;
+  background:linear-gradient(135deg,var(--ink) 0%,#2C2016 100%);
+  border-radius:var(--radius);padding:20px;
+  color:white;position:relative;overflow:hidden;
+}
+.dagkaart::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(196,113,74,.15);
+}
+.dagkaart-date{
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);font-weight:500;margin-bottom:4px;
+}
+.dagkaart-prompt{
+  font-family:var(--font-display);font-size:22px;
+  font-style:italic;font-weight:300;
+  color:white;margin-bottom:16px;line-height:1.3;
+}
+.mood-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.mood-btn{
+  padding:8px 14px;border-radius:100px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.2);
+  color:white;font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .2s;
+  font-family:var(--font-body);
+}
+.mood-btn:active,.mood-btn.active{
+  background:var(--terra);border-color:var(--terra);
+}
+.dagkaart-actions{display:flex;gap:8px}
+.dagkaart-btn{
+  flex:1;height:40px;border-radius:100px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);
+  color:white;font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+  font-family:var(--font-body);
+}
+.dagkaart-btn.primary{
+  background:var(--terra);border-color:var(--terra);
+}
+.dagkaart-btn:active{transform:scale(.97)}
+
+/* Filter bar */
+.filter-bar{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:0 16px 12px;scrollbar-width:none;
+}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{
+  padding:8px 16px;border-radius:100px;
+  background:var(--white);border:1.5px solid var(--soft);
+  font-size:12px;font-weight:500;color:var(--ink2);
+  cursor:pointer;white-space:nowrap;transition:all .2s;
+  font-family:var(--font-body);
+}
+.filter-chip.active{
+  background:var(--ink);border-color:var(--ink);color:white;
+}
+
+/* Item grid */
+.item-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:12px;padding:0 16px 16px;
+}
+.item-card{
+  background:var(--white);border-radius:var(--radius);
+  overflow:hidden;box-shadow:0 2px 10px var(--shadow);
+  cursor:pointer;transition:all .2s;position:relative;
+}
+.item-card:active{transform:scale(.98)}
+.item-thumb{
+  width:100%;aspect-ratio:3/4;
+  display:flex;align-items:center;justify-content:center;
+  font-size:52px;
+  background:linear-gradient(135deg,var(--cream2),var(--cream));
+  position:relative;
+}
+.item-thumb img{
+  width:100%;height:100%;object-fit:cover;
+}
+.item-season{
+  position:absolute;top:8px;right:8px;
+  font-size:14px;
+}
+.item-worn-badge{
+  position:absolute;top:8px;left:8px;
+  background:var(--terra);color:white;
+  font-size:9px;font-weight:600;padding:3px 6px;
+  border-radius:4px;letter-spacing:.05em;
+}
+.item-info{padding:10px 12px 12px}
+.item-name{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px}
+.item-cat{font-size:11px;color:var(--ink2);font-weight:400}
+.item-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.item-tag{
+  font-size:10px;padding:2px 7px;border-radius:100px;
+  background:var(--cream2);color:var(--ink2);font-weight:500;
+}
+
+/* Empty state */
+.empty-state{
+  text-align:center;padding:48px 24px;
+}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{
+  font-family:var(--font-display);font-size:24px;
+  font-style:italic;color:var(--ink);margin-bottom:8px;
+}
+.empty-sub{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:24px}
+
+/* Add item FAB */
+.fab{
+  position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 72px);
+  right:20px;width:54px;height:54px;border-radius:50%;
+  background:var(--terra);color:white;border:none;
+  font-size:24px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(196,113,74,.4);
+  transition:all .2s;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+}
+.fab:active{transform:scale(.93)}
+
+/* Demo items banner */
+.demo-banner{
+  margin:0 16px 16px;padding:14px 16px;
+  background:linear-gradient(135deg,#FFF8F4,#FDF0E8);
+  border:1.5px solid var(--terra-light);
+  border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+}
+.demo-banner-text{font-size:13px;color:var(--ink);font-weight:500;flex:1}
+.demo-banner-sub{font-size:11px;color:var(--ink2);font-weight:400;margin-top:2px}
+.demo-load-btn{
+  padding:8px 14px;border-radius:100px;
+  background:var(--terra);color:white;border:none;
+  font-size:12px;font-weight:600;cursor:pointer;
+  white-space:nowrap;font-family:var(--font-body);
+  transition:all .2s;
+}
+.demo-load-btn:active{transform:scale(.95)}
+
+/* ── CHAT TAB ───────────────────────────────────────────── */
+.chat-container{
+  display:flex;flex-direction:column;
+  height:calc(100vh - 120px);
+  height:calc(100dvh - 120px);
+}
+.chat-messages{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.chat-msg{
+  max-width:82%;animation:fadeUp .3s ease;
+}
+.chat-msg.user{align-self:flex-end}
+.chat-msg.ai{align-self:flex-start}
+.chat-bubble{
+  padding:12px 16px;border-radius:18px;
+  font-size:14px;line-height:1.65;
+}
+.chat-msg.user .chat-bubble{
+  background:var(--terra);color:white;
+  border-bottom-right-radius:4px;
+}
+.chat-msg.ai .chat-bubble{
+  background:var(--white);color:var(--ink);
+  border-bottom-left-radius:4px;
+  box-shadow:0 2px 10px var(--shadow);
+}
+.chat-msg.ai .chat-bubble strong{color:var(--terra)}
+.chat-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--terra),var(--warm));
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;margin-bottom:4px;
+}
+.chat-typing{
+  display:flex;align-items:center;gap:4px;
+  padding:12px 16px;
+}
+.chat-typing span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--soft);
+  animation:bounce .8s infinite;
+}
+.chat-typing span:nth-child(2){animation-delay:.15s}
+.chat-typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{
+  0%,60%,100%{transform:translateY(0)}
+  30%{transform:translateY(-6px);background:var(--terra)}
+}
+.chat-input-area{
+  padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);
+  background:var(--white);
+  border-top:1px solid var(--cream2);
+  display:flex;gap:10px;align-items:flex-end;
+}
+.chat-input{
+  flex:1;border:1.5px solid var(--soft);
+  border-radius:22px;padding:10px 16px;
+  font-family:var(--font-body);font-size:14px;
+  background:var(--cream);color:var(--ink);
+  outline:none;resize:none;max-height:100px;
+  line-height:1.5;transition:border-color .2s;
+}
+.chat-input:focus{border-color:var(--terra)}
+.chat-send{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--terra);border:none;
+  color:white;font-size:18px;cursor:pointer;
+  transition:all .2s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.chat-send:active{transform:scale(.92);background:#B5623B}
+.chat-send:disabled{background:var(--soft)}
+
+/* Quick prompts */
+.quick-prompts{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:8px 16px;scrollbar-width:none;
+}
+.quick-prompts::-webkit-scrollbar{display:none}
+.quick-prompt{
+  padding:8px 14px;border-radius:100px;
+  background:var(--cream2);border:1.5px solid var(--soft);
+  font-size:12px;font-weight:500;color:var(--ink2);
+  cursor:pointer;white-space:nowrap;transition:all .2s;
+  font-family:var(--font-body);
+}
+.quick-prompt:active{background:var(--cream);border-color:var(--terra);color:var(--terra)}
+
+/* ── SUGGESTIES TAB ─────────────────────────────────────── */
+.occasions-row{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:0 16px 16px;scrollbar-width:none;
+}
+.occasions-row::-webkit-scrollbar{display:none}
+.occasion-chip{
+  padding:10px 16px;border-radius:100px;
+  background:var(--white);border:2px solid var(--soft);
+  font-size:13px;font-weight:500;cursor:pointer;
+  white-space:nowrap;transition:all .2s;color:var(--ink2);
+  font-family:var(--font-body);
+}
+.occasion-chip.active{
+  background:var(--ink);border-color:var(--ink);color:white;
+}
+.outfit-cards{display:flex;flex-direction:column;gap:14px;padding:0 16px 16px}
+.outfit-card{
+  background:var(--white);border-radius:var(--radius);
+  padding:16px;box-shadow:0 2px 10px var(--shadow);
+}
+.outfit-items{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;
+}
+.outfit-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.outfit-item-thumb{
+  width:52px;height:64px;border-radius:8px;
+  background:var(--cream2);display:flex;
+  align-items:center;justify-content:center;
+  font-size:24px;overflow:hidden;
+}
+.outfit-item-thumb img{width:100%;height:100%;object-fit:cover}
+.outfit-item-name{font-size:9px;color:var(--ink2);font-weight:500;text-align:center;max-width:52px}
+.outfit-desc{font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:12px}
+.outfit-actions{display:flex;gap:8px}
+.outfit-action-btn{
+  flex:1;height:34px;border-radius:100px;
+  background:var(--cream2);border:none;
+  font-size:12px;font-weight:500;color:var(--ink2);
+  cursor:pointer;transition:all .15s;font-family:var(--font-body);
+}
+.outfit-action-btn.like{background:var(--terra);color:white}
+.outfit-action-btn:active{transform:scale(.96)}
+
+/* Generate button */
+.generate-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:calc(100% - 32px);margin:0 16px 16px;
+  height:52px;border-radius:100px;
+  background:linear-gradient(135deg,var(--ink),#2C2016);
+  color:white;border:none;font-family:var(--font-body);
+  font-size:15px;font-weight:600;cursor:pointer;
+  transition:all .2s;letter-spacing:.02em;
+}
+.generate-btn:active{transform:scale(.98)}
+.generate-btn .sparkle{font-size:18px}
+
+/* ── DNA TAB ────────────────────────────────────────────── */
+.dna-hero{
+  margin:16px;padding:24px;
+  background:linear-gradient(135deg,var(--ink),#2C2016);
+  border-radius:var(--radius);color:white;
+  text-align:center;
+}
+.dna-hero-name{
+  font-family:var(--font-display);font-size:32px;
+  font-style:italic;font-weight:300;
+  margin-bottom:4px;
+}
+.dna-hero-sub{
+  font-size:13px;color:rgba(255,255,255,.6);
+  font-weight:400;margin-bottom:20px;
+}
+.dna-vibes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.dna-vibe-tag{
+  padding:6px 14px;border-radius:100px;
+  background:rgba(255,255,255,.12);
+  font-size:12px;font-weight:500;color:white;
+  border:1px solid rgba(255,255,255,.2);
+}
+
+.dna-section{
+  margin:0 16px 16px;background:var(--white);
+  border-radius:var(--radius);padding:16px;
+  box-shadow:0 2px 10px var(--shadow);
+}
+.dna-section-title{
+  font-family:var(--font-display);font-size:18px;
+  font-weight:600;color:var(--ink);margin-bottom:12px;
+}
+.dna-row{display:flex;flex-direction:column;gap:8px}
+.dna-item{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--ink);line-height:1.5;
+}
+.dna-item-label{
+  font-weight:600;color:var(--ink2);
+  white-space:nowrap;min-width:90px;
+  font-size:12px;
+}
+.color-dots{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.color-dot-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.color-dot-circle{
+  width:28px;height:28px;border-radius:50%;
+  box-shadow:0 2px 6px var(--shadow);
+}
+.color-dot-name{font-size:9px;color:var(--ink2);font-weight:500}
+
+.dna-edit-btn{
+  display:block;width:calc(100% - 32px);
+  margin:0 16px 16px;height:46px;border-radius:100px;
+  background:var(--cream2);border:1.5px solid var(--soft);
+  color:var(--ink);font-family:var(--font-body);
+  font-size:14px;font-weight:500;cursor:pointer;
+  transition:all .2s;
+}
+.dna-edit-btn:active{background:var(--terra);color:white;border-color:var(--terra)}
+
+/* ── WEEK TAB ───────────────────────────────────────────── */
+.week-grid{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.week-day{
+  background:var(--white);border-radius:var(--radius-sm);
+  padding:14px 16px;box-shadow:0 2px 8px var(--shadow);
+  display:flex;align-items:center;gap:14px;cursor:pointer;
+  transition:all .2s;
+}
+.week-day:active{transform:scale(.99)}
+.week-day.today{border-left:3px solid var(--terra)}
+.week-day-date{
+  text-align:center;min-width:40px;
+}
+.week-day-num{
+  font-family:var(--font-display);font-size:26px;
+  font-weight:400;color:var(--ink);line-height:1;
+}
+.week-day-name{font-size:10px;color:var(--ink2);font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+.week-day-outfit{
+  flex:1;display:flex;gap:8px;align-items:center;
+}
+.week-thumb{
+  width:36px;height:44px;border-radius:6px;
+  background:var(--cream2);display:flex;
+  align-items:center;justify-content:center;font-size:18px;
+  overflow:hidden;
+}
+.week-thumb img{width:100%;height:100%;object-fit:cover}
+.week-outfit-label{font-size:12px;color:var(--ink2);font-style:italic}
+.week-add-icon{font-size:20px;color:var(--soft)}
+
+/* ── MODAL / SHEET ──────────────────────────────────────── */
+.sheet-overlay{
+  position:fixed;inset:0;background:rgba(28,22,18,.4);
+  z-index:500;display:none;align-items:flex-end;
+  backdrop-filter:blur(4px);
+}
+.sheet-overlay.open{display:flex}
+.sheet{
+  width:100%;background:var(--white);
+  border-radius:24px 24px 0 0;
+  padding:12px 20px calc(env(safe-area-inset-bottom,16px) + 16px);
+  max-height:85vh;overflow-y:auto;
+  animation:slideUp .35s cubic-bezier(.32,.72,0,1);
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{
+  width:40px;height:4px;border-radius:2px;
+  background:var(--soft);margin:0 auto 20px;
+}
+.sheet-title{
+  font-family:var(--font-display);font-size:24px;
+  font-weight:400;color:var(--ink);margin-bottom:20px;
+}
+
+/* Add item form */
+.form-group{margin-bottom:16px}
+.form-label{
+  font-size:12px;font-weight:600;color:var(--ink2);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:8px;display:block;
+}
+.form-input{
+  width:100%;padding:12px 14px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--soft);background:var(--cream);
+  font-family:var(--font-body);font-size:14px;color:var(--ink);
+  outline:none;transition:border-color .2s;
+}
+.form-input:focus{border-color:var(--terra)}
+.form-select{
+  width:100%;padding:12px 14px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--soft);background:var(--cream);
+  font-family:var(--font-body);font-size:14px;color:var(--ink);
+  outline:none;appearance:none;
+}
+.tag-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.tag-option{
+  padding:7px 14px;border-radius:100px;
+  border:1.5px solid var(--soft);
+  font-size:12px;font-weight:500;color:var(--ink2);
+  cursor:pointer;transition:all .2s;background:var(--white);
+  font-family:var(--font-body);
+}
+.tag-option.selected{background:var(--terra);border-color:var(--terra);color:white}
+.photo-upload{
+  width:100%;aspect-ratio:3/2;border-radius:var(--radius-sm);
+  border:2px dashed var(--soft);background:var(--cream);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;cursor:pointer;transition:all .2s;
+}
+.photo-upload:active{border-color:var(--terra);background:var(--cream2)}
+.photo-upload-icon{font-size:32px}
+.photo-upload-text{font-size:13px;color:var(--ink2);font-weight:500}
+.photo-upload img{
+  width:100%;height:100%;object-fit:cover;
+  border-radius:calc(var(--radius-sm) - 2px);
+}
+.form-submit{
+  width:100%;height:52px;border-radius:100px;
+  background:var(--terra);color:white;border:none;
+  font-family:var(--font-body);font-size:15px;font-weight:600;
+  cursor:pointer;transition:all .2s;
+}
+.form-submit:active{transform:scale(.98);background:#B5623B}
+
+/* Outfit result sheet */
+.outfit-result{padding:0}
+.outfit-result-items{
+  display:flex;gap:10px;margin-bottom:16px;
+  flex-wrap:wrap;
+}
+.or-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.or-thumb{
+  width:64px;height:80px;border-radius:10px;
+  background:var(--cream2);display:flex;
+  align-items:center;justify-content:center;font-size:30px;
+  overflow:hidden;
+}
+.or-thumb img{width:100%;height:100%;object-fit:cover}
+.or-name{font-size:10px;color:var(--ink2);font-weight:500;text-align:center;max-width:64px;line-height:1.3}
+.outfit-result-text{
+  font-size:14px;line-height:1.7;color:var(--ink);
+  margin-bottom:16px;
+}
+.outfit-result-actions{display:flex;gap:10px}
+.or-btn{
+  flex:1;height:44px;border-radius:100px;
+  border:none;font-family:var(--font-body);
+  font-size:14px;font-weight:600;cursor:pointer;
+  transition:all .2s;
+}
+.or-btn.primary{background:var(--terra);color:white}
+.or-btn.secondary{background:var(--cream2);color:var(--ink)}
+.or-btn:active{transform:scale(.97)}
+
+/* Toast */
+.toast{
+  position:fixed;top:calc(env(safe-area-inset-top,0px) + 60px);
+  left:50%;transform:translateX(-50%) translateY(-80px);
+  background:var(--ink);color:white;
+  padding:10px 20px;border-radius:100px;
+  font-size:13px;font-weight:500;
+  transition:transform .3s cubic-bezier(.32,.72,0,1);
+  z-index:999;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(28,22,18,.3);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Loading spinner */
+.spinner{
+  display:inline-block;width:20px;height:20px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:white;border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:0;height:0}
+
+/* Util */
+.hidden{display:none!important}
+.flex{display:flex}
+.flex-center{display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     ONBOARDING
+══════════════════════════════════════════════════════════ -->
+<div id="onboarding">
+  <div class="ob-header">
+    <div class="ob-logo">Stijl Studio ✦</div>
+    <div class="ob-progress" id="obProgress">
+      <!-- dots rendered by JS -->
+    </div>
+  </div>
+
+  <div id="obSlideContainer">
+    <!-- slides rendered by JS -->
+  </div>
+
+  <div class="ob-footer" id="obFooter">
+    <button class="ob-btn-back hidden" id="obBack" onclick="obPrev()">←</button>
+    <button class="ob-btn-primary" id="obNext" onclick="obNext()">Verder</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════════════════ -->
+<div id="app">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="app-logo">Stijl <span>Studio</span></div>
+    <div class="header-right">
+      <div class="weather-chip" id="weatherChip" onclick="refreshWeather()">
+        <span id="weatherIcon">🌤</span>
+        <span id="weatherText">Weer laden...</span>
+      </div>
+      <button class="avatar-btn" id="avatarBtn" onclick="showTab('dna')">?</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="app-content">
+
+    <!-- GARDEROBE TAB -->
+    <div class="tab-pane active" id="tab-kast">
+      <div class="section-header">
+        <div class="section-title" id="wardrobeTitle">Jouw Kast</div>
+        <div class="section-count" id="wardrobeCount">0 items</div>
+      </div>
+
+      <!-- Dagkaart -->
+      <div class="dagkaart">
+        <div class="dagkaart-date" id="dagkaartDate"></div>
+        <div class="dagkaart-prompt" id="dagkaartPrompt">Wat trek je vandaag aan?</div>
+        <div class="mood-row">
+          <button class="mood-btn" onclick="setMood('rok/jurk')">👗 Rok/jurk</button>
+          <button class="mood-btn" onclick="setMood('broek')">👖 Broek</button>
+          <button class="mood-btn" onclick="setMood('casual')">✨ Casual</button>
+        </div>
+        <div class="dagkaart-actions">
+          <button class="dagkaart-btn primary" onclick="generateDayOutfit()">✦ Stijladvies</button>
+          <button class="dagkaart-btn" onclick="showTab('chat')">💬 Stylist</button>
+        </div>
+      </div>
+
+      <!-- Demo banner (shown when wardrobe is empty) -->
+      <div class="demo-banner" id="demoBanner">
+        <div>
+          <div class="demo-banner-text">🌟 Laad voorbeeldgarderobe</div>
+          <div class="demo-banner-sub">15 basicitems om de app te verkennen</div>
+        </div>
+        <button class="demo-load-btn" onclick="loadDemoItems()">Laden</button>
+      </div>
+
+      <!-- Filter -->
+      <div class="filter-bar" id="filterBar">
+        <div class="filter-chip active" onclick="setFilter('alle',this)">Alle</div>
+        <div class="filter-chip" onclick="setFilter('ongedragen',this)">● Ongedragen</div>
+        <div class="filter-chip" onclick="setFilter('tops',this)">Tops</div>
+        <div class="filter-chip" onclick="setFilter('bottoms',this)">Broeken & Rokken</div>
+        <div class="filter-chip" onclick="setFilter('jurken',this)">Jurken</div>
+        <div class="filter-chip" onclick="setFilter('layers',this)">Laagjes</div>
+        <div class="filter-chip" onclick="setFilter('shoes',this)">Schoenen</div>
+        <div class="filter-chip" onclick="setFilter('bags',this)">Tassen</div>
+      </div>
+
+      <!-- Item grid -->
+      <div class="item-grid" id="itemGrid"></div>
+
+      <!-- Empty state (when no items + no demo loaded) -->
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">👗</div>
+        <div class="empty-title">Je kast is leeg</div>
+        <div class="empty-sub">Voeg je eerste kledingstukken toe via de + knop, of laad de voorbeeldgarderobe om de app te ontdekken.</div>
+      </div>
+    </div>
+
+    <!-- SUGGESTIES TAB -->
+    <div class="tab-pane" id="tab-outfits">
+      <div class="section-header">
+        <div class="section-title">Outfits</div>
+      </div>
+
+      <div class="occasions-row">
+        <div class="occasion-chip active" onclick="setOccasion('casual',this)">☀️ Casual</div>
+        <div class="occasion-chip" onclick="setOccasion('werk',this)">💼 Werkdag</div>
+        <div class="occasion-chip" onclick="setOccasion('avond',this)">✨ Avond</div>
+        <div class="occasion-chip" onclick="setOccasion('bijzonder',this)">🌹 Bijzonder</div>
+        <div class="occasion-chip" onclick="setOccasion('vakantie',this)">🌊 Vakantie</div>
+        <div class="occasion-chip" onclick="setOccasion('sport',this)">🏃 Sport</div>
+      </div>
+
+      <div style="padding:0 16px 16px">
+        <div style="font-size:12px;color:var(--ink2);font-weight:500;margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em">Voorkeur</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="filter-chip active" id="prefRok" onclick="togglePref('rok',this)">Rok</button>
+          <button class="filter-chip" id="prefBroek" onclick="togglePref('broek',this)">Broek</button>
+          <button class="filter-chip" id="prefSneakers" onclick="togglePref('sneakers',this)">Sneakers</button>
+          <button class="filter-chip" id="prefSandalen" onclick="togglePref('sandalen',this)">Sandalen</button>
+          <button class="filter-chip" id="prefLaarzen" onclick="togglePref('laarzen',this)">Laarzen</button>
+        </div>
+      </div>
+
+      <button class="generate-btn" onclick="generateOutfits()">
+        <span class="sparkle">✦</span>
+        <span id="generateBtnText">Genereer outfits</span>
+      </button>
+
+      <div class="outfit-cards" id="outfitCards">
+        <div style="text-align:center;padding:32px 24px;color:var(--ink2);font-size:14px;line-height:1.7">
+          <div style="font-size:40px;margin-bottom:12px">✨</div>
+          Kies een gelegenheid en klik op <strong>Genereer</strong> — ik stel outfits samen op basis van jouw stijl en garderobe.
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT TAB -->
+    <div class="tab-pane" id="tab-chat">
+      <div class="chat-container">
+        <div class="quick-prompts" id="quickPrompts">
+          <div class="quick-prompt" onclick="sendQuickPrompt(this)">Wat draag ik vandaag?</div>
+          <div class="quick-prompt" onclick="sendQuickPrompt(this)">Geef me een werkoutfit</div>
+          <div class="quick-prompt" onclick="sendQuickPrompt(this)">Wat combineer ik met mijn zwarte broek?</div>
+          <div class="quick-prompt" onclick="sendQuickPrompt(this)">Trend tips voor dit seizoen</div>
+          <div class="quick-prompt" onclick="sendQuickPrompt(this)">Wat mis ik in mijn garderobe?</div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <textarea class="chat-input" id="chatInput" placeholder="Stel je stylist een vraag..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+            oninput="autoResize(this)"></textarea>
+          <button class="chat-send" id="chatSend" onclick="sendChat()">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK TAB -->
+    <div class="tab-pane" id="tab-week">
+      <div class="section-header">
+        <div class="section-title">Weekplanner</div>
+      </div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+
+    <!-- STIJL DNA TAB -->
+    <div class="tab-pane" id="tab-dna">
+      <div id="dnaContent">
+        <!-- rendered by JS -->
+      </div>
+      <button class="dna-edit-btn" onclick="restartOnboarding()">🔄 Stijl DNA bijwerken</button>
+    </div>
+
+  </div><!-- end app-content -->
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="showTab('kast')" id="nav-kast">
+      <span class="nav-icon">👗</span>
+      <span class="nav-label">Kast</span>
+    </button>
+    <button class="nav-item" onclick="showTab('outfits')" id="nav-outfits">
+      <span class="nav-icon">✨</span>
+      <span class="nav-label">Outfits</span>
+    </button>
+    <button class="nav-item" onclick="showTab('chat')" id="nav-chat">
+      <span class="nav-icon">💬</span>
+      <span class="nav-label">Stylist</span>
+    </button>
+    <button class="nav-item" onclick="showTab('week')" id="nav-week">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Week</span>
+    </button>
+    <button class="nav-item" onclick="showTab('dna')" id="nav-dna">
+      <span class="nav-icon">🧬</span>
+      <span class="nav-label">DNA</span>
+    </button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabAdd" onclick="openAddItem()">+</button>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Sheet: Add item -->
+<div class="sheet-overlay" id="sheetAddItem" onclick="if(event.target===this)closeSheet('sheetAddItem')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Item toevoegen</div>
+    <div class="form-group">
+      <label class="form-label">Naam</label>
+      <input class="form-input" id="itemName" placeholder="Bijv. Blauwe blouse" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categorie</label>
+      <select class="form-select" id="itemCat">
+        <option value="tops">Tops & blouses</option>
+        <option value="bottoms">Broeken & rokken</option>
+        <option value="jurken">Jurken</option>
+        <option value="layers">Laagjes & jassen</option>
+        <option value="shoes">Schoenen</option>
+        <option value="bags">Tassen</option>
+        <option value="accessories">Accessoires</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kleur</label>
+      <div class="tag-grid" id="colorTags">
+        <div class="tag-option" onclick="toggleTag(this)">Zwart</div>
+        <div class="tag-option" onclick="toggleTag(this)">Wit</div>
+        <div class="tag-option" onclick="toggleTag(this)">Blauw</div>
+        <div class="tag-option" onclick="toggleTag(this)">Rood</div>
+        <div class="tag-option" onclick="toggleTag(this)">Roze</div>
+        <div class="tag-option" onclick="toggleTag(this)">Groen</div>
+        <div class="tag-option" onclick="toggleTag(this)">Beige</div>
+        <div class="tag-option" onclick="toggleTag(this)">Bruin</div>
+        <div class="tag-option" onclick="toggleTag(this)">Grijs</div>
+        <div class="tag-option" onclick="toggleTag(this)">Geel</div>
+        <div class="tag-option" onclick="toggleTag(this)">Oranje</div>
+        <div class="tag-option" onclick="toggleTag(this)">Paars</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pasvorm</label>
+      <div class="tag-grid" id="fitTags">
+        <div class="tag-option" onclick="toggleTagSingle(this,'fitTags')">Aansluitend</div>
+        <div class="tag-option" onclick="toggleTagSingle(this,'fitTags')">Licht oversized</div>
+        <div class="tag-option" onclick="toggleTagSingle(this,'fitTags')">Wijd</div>
+        <div class="tag-option" onclick="toggleTagSingle(this,'fitTags')">Crop</div>
+        <div class="tag-option" onclick="toggleTagSingle(this,'fitTags')">Flared</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Seizoen</label>
+      <div class="tag-grid" id="seizoenTags">
+        <div class="tag-option" onclick="toggleTagSingle(this,'seizoenTags')">☀️ Zomer</div>
+        <div class="tag-option" onclick="toggleTagSingle(this,'seizoenTags')">❄️ Winter</div>
+        <div class="tag-option selected" onclick="toggleTagSingle(this,'seizoenTags')">🌱 Beide</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Foto (optioneel)</label>
+      <div class="photo-upload" id="photoUpload" onclick="document.getElementById('photoInput').click()">
+        <div class="photo-upload-icon">📷</div>
+        <div class="photo-upload-text">Tik om foto te kiezen</div>
+        <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+      </div>
+    </div>
+    <button class="form-submit" onclick="saveItem()">Item toevoegen</button>
+  </div>
+</div>
+
+<!-- Sheet: Outfit result -->
+<div class="sheet-overlay" id="sheetOutfit" onclick="if(event.target===this)closeSheet('sheetOutfit')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="outfitSheetTitle">Vandaag's outfit ✦</div>
+    <div class="outfit-result">
+      <div class="outfit-result-items" id="outfitResultItems"></div>
+      <div class="outfit-result-text" id="outfitResultText"></div>
+      <div class="outfit-result-actions">
+        <button class="or-btn primary" onclick="wearOutfit()">❖ Dit draag ik!</button>
+        <button class="or-btn secondary" onclick="closeSheet('sheetOutfit');generateDayOutfit()">↻ Andere</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════ -->
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const WORKER_URL = 'https://griette-stylist.griette.workers.dev';
+const TOTAL_STEPS = 7; // name + 6 quiz steps
+
+// ── STATE ─────────────────────────────────────────────────
+let userProfile = JSON.parse(localStorage.getItem('userProfile') || 'null');
+let items = JSON.parse(localStorage.getItem('items') || JSON.stringify({
+  tops:[], bottoms:[], jurken:[], layers:[], shoes:[], bags:[], accessories:[]
+}));
+let wornLog = JSON.parse(localStorage.getItem('wornLog') || '{}');
+let chatHistory = [];
+let currentFilter = 'alle';
+let currentOccasion = 'casual';
+let currentPrefs = {rok: true, broek: false, sneakers: true, sandalen: false, laarzen: false};
+let currentMood = null;
+let currentPhotoData = null;
+let obStep = 0;
+let obAnswers = {};
+
+// ── ONBOARDING DATA ───────────────────────────────────────
+const STEPS = [
+  // Step 0 — Name (special)
+  { type: 'name', eyebrow: 'Welkom', title: 'Hoe heet je?', sub: 'Ik maak een stijlprofiel speciaal voor jou.' },
+
+  // Step 1 — Silhouet
+  {
+    type: 'cards', cols: 2, key: 'silhouet', eyebrow: 'Stap 1 · Silhouet',
+    title: 'Hoe draag jij het liefst?',
+    sub: 'Kies wat het beste bij jouw voorkeur past.',
+    multi: false,
+    options: [
+      { emoji: '⌛', label: 'Taille benadrukken', sub: 'Wijd + aansluitend combo' },
+      { emoji: '🪷', label: 'Luchtig & ruimvallend', sub: 'Vrij en comfortabel' },
+      { emoji: '💫', label: 'Strak & gefiteerd', sub: 'Elke lijn zichtbaar' },
+      { emoji: '🎭', label: 'Gevarieerd per dag', sub: 'Afhankelijk van mood' },
+    ]
+  },
+
+  // Step 2 — Kleuren
+  {
+    type: 'colors', key: 'kleuren', eyebrow: 'Stap 2 · Kleur',
+    title: 'Welke kleuren zijn <em>jij</em>?',
+    sub: 'Kies meerdere. Dit wordt jouw kleurpalet.',
+    multi: true,
+    options: [
+      { color: '#1C1612', name: 'Zwart' },
+      { color: '#FDFAF6', name: 'Wit', border: '1px solid #DDD' },
+      { color: '#F5E6C8', name: 'Crème' },
+      { color: '#8B6F5E', name: 'Bruin' },
+      { color: '#1B3A5C', name: 'Navy' },
+      { color: '#C4714A', name: 'Terra' },
+      { color: '#D4A0A0', name: 'Mauve' },
+      { color: '#8B5E83', name: 'Paars' },
+      { color: '#E8A0B0', name: 'Roze' },
+      { color: '#4A7A5E', name: 'Groen' },
+      { color: '#C4A84A', name: 'Goud' },
+      { color: '#A0B4C8', name: 'Lichtblauw' },
+    ]
+  },
+
+  // Step 3 — Gelegenheden
+  {
+    type: 'chips', key: 'gelegenheden', eyebrow: 'Stap 3 · Leven',
+    title: 'Waar kleed jij je voor aan?',
+    sub: 'Kies alles wat van toepassing is.',
+    multi: true,
+    options: ['💼 Werk / kantoor', '☀️ Dagelijks casual', '✨ Avond & evenementen',
+              '🏃 Sport & actief', '🌊 Vakantie', '🌹 Speciale gelegenheden',
+              '🏠 Thuiswerken', '🎓 School / studie']
+  },
+
+  // Step 4 — Materiaal
+  {
+    type: 'cards', cols: 2, key: 'materiaal', eyebrow: 'Stap 4 · Feel',
+    title: 'Hoe moet je kleding <em>aanvoelen</em>?',
+    sub: 'Kies jouw favoriete draaggevoel.',
+    multi: true,
+    options: [
+      { emoji: '🌊', label: 'Soepel & vloeiend', sub: 'Viscose, modal, zijde' },
+      { emoji: '🪨', label: 'Stevig & gestructureerd', sub: 'Denim, wol, linnen' },
+      { emoji: '🤍', label: 'Zacht & cozy', sub: 'Cashmere, jersey, katoen' },
+      { emoji: '🌬️', label: 'Licht & luchtig', sub: 'Chiffon, lyocell, linnen' },
+    ]
+  },
+
+  // Step 5 — No-go's
+  {
+    type: 'chips', key: 'nogo', eyebrow: 'Stap 5 · Grenzen',
+    title: 'Wat draag jij absoluut <em>niet</em>?',
+    sub: 'Optioneel — sla over als alles mag.',
+    multi: true,
+    optional: true,
+    options: ['Grote prints', 'Zichtbare logo\'s', 'Crop tops', 'Hoge hakken',
+              'Synthetische stoffen', 'Gesloten halslijnen', 'Korte rokjes',
+              'Diep decolleté', 'Legging als broek', 'Ballon/pofmouwen']
+  },
+
+  // Step 6 — Vibe
+  {
+    type: 'vibes', key: 'vibe', eyebrow: 'Stap 6 · Vibe',
+    title: 'Wat is jouw stijl <em>vibe</em>?',
+    sub: 'Kies maximaal 2.',
+    multi: true, maxSelect: 2,
+    options: [
+      { emoji: '🤍', label: 'Minimalistisch', bg: 'linear-gradient(135deg,#6B6B6B,#3A3A3A)' },
+      { emoji: '📚', label: 'Klassiek', bg: 'linear-gradient(135deg,#5C4B3A,#2C2016)' },
+      { emoji: '🌈', label: 'Kleurrijk', bg: 'linear-gradient(135deg,#C4714A,#8B3A8A)' },
+      { emoji: '⚡', label: 'Stoer', bg: 'linear-gradient(135deg,#1B1B2F,#4A3F6B)' },
+      { emoji: '🌸', label: 'Romantisch', bg: 'linear-gradient(135deg,#C87AA0,#E8A0B0)' },
+      { emoji: '🌿', label: 'Naturel', bg: 'linear-gradient(135deg,#4A7A5E,#8B6F3A)' },
+    ]
+  },
+];
+
+// ── ONBOARDING LOGIC ──────────────────────────────────────
+function initOnboarding() {
+  renderObProgress();
+  renderObSlide(0);
+}
+
+function renderObProgress() {
+  const dots = document.getElementById('obProgress');
+  dots.innerHTML = '';
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const d = document.createElement('div');
+    d.className = 'ob-dot' + (i === obStep ? ' active' : i < obStep ? ' done' : '');
+    dots.appendChild(d);
+  }
+}
+
+function renderObSlide(step) {
+  const s = STEPS[step];
+  const container = document.getElementById('obSlideContainer');
+  const backBtn = document.getElementById('obBack');
+  const nextBtn = document.getElementById('obNext');
+
+  backBtn.classList.toggle('hidden', step === 0);
+
+  if (step === TOTAL_STEPS) {
+    renderObWelcome();
+    nextBtn.textContent = 'Begin met stylen →';
+    nextBtn.disabled = false;
+    return;
+  }
+
+  nextBtn.disabled = false;
+  nextBtn.textContent = step === TOTAL_STEPS - 1 ? 'Afronden ✦' : 'Verder →';
+
+  let html = `<div class="ob-slide">`;
+  html += `<div class="ob-eyebrow">${s.eyebrow || ''}</div>`;
+  html += `<div class="ob-title">${s.title.replace(/<em>/g,'<em>')}</div>`;
+  html += `<div class="ob-sub">${s.sub}</div>`;
+
+  if (s.type === 'name') {
+    const saved = obAnswers['name'] || '';
+    html += `<input class="ob-name-input" id="nameInput" type="text" placeholder="Jouw naam..." 
+      value="${saved}" autocomplete="given-name" autofocus
+      oninput="obAnswers.name=this.value;checkNameBtn()">`;
+    nextBtn.disabled = !saved;
+  } else if (s.type === 'cards') {
+    html += `<div class="ob-cards cols${s.cols}">`;
+    s.options.forEach((opt, i) => {
+      const sel = isSelected(s.key, i, opt.label);
+      html += `<div class="ob-card ${sel ? 'selected' : ''}" onclick="toggleObOption('${s.key}',${i},'${opt.label}',${s.multi},${s.maxSelect||99})">
+        <div class="check">✓</div>
+        <span class="ob-card-emoji">${opt.emoji}</span>
+        <div class="ob-card-label">${opt.label}</div>
+        ${opt.sub ? `<div class="ob-card-sub">${opt.sub}</div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  } else if (s.type === 'colors') {
+    html += `<div class="ob-colors">`;
+    s.options.forEach((opt, i) => {
+      const sel = isSelected(s.key, i, opt.name);
+      html += `<div class="ob-color ${sel ? 'selected' : ''}" 
+        style="background:${opt.color};${opt.border ? 'border:'+opt.border : ''}"
+        onclick="toggleObOption('${s.key}',${i},'${opt.name}',true,99)">
+        <div class="check" style="color:${opt.color==='#FDFAF6'?'#333':'white'}">✓</div>
+      </div>`;
+    });
+    html += `</div>`;
+    html += `<div style="margin-top:8px;font-size:12px;color:var(--ink2)">
+      <span id="colorLabels">${(obAnswers.kleuren||[]).join(' · ') || 'Nog niets geselecteerd'}</span>
+    </div>`;
+  } else if (s.type === 'chips') {
+    html += `<div class="ob-chips">`;
+    s.options.forEach((opt, i) => {
+      const sel = isSelected(s.key, i, opt);
+      html += `<div class="ob-chip ${sel ? 'selected' : ''}" 
+        onclick="toggleObOption('${s.key}',${i},'${opt}',true,99)">${opt}</div>`;
+    });
+    html += `</div>`;
+    if (s.optional) {
+      nextBtn.disabled = false; // optional step, always can proceed
+    }
+  } else if (s.type === 'vibes') {
+    html += `<div class="ob-vibes">`;
+    s.options.forEach((opt, i) => {
+      const sel = isSelected(s.key, i, opt.label);
+      html += `<div class="ob-vibe ${sel ? 'selected' : ''}" 
+        onclick="toggleObOption('${s.key}',${i},'${opt.label}',true,${s.maxSelect||99})">
+        <div class="ob-vibe-bg" style="background:${opt.bg}"></div>
+        <div class="check">✓</div>
+        <div class="ob-vibe-content">
+          <span class="ob-vibe-emoji">${opt.emoji}</span>
+          <div class="ob-vibe-label">${opt.label}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+
+  if (s.type === 'name') {
+    setTimeout(() => document.getElementById('nameInput')?.focus(), 100);
+  }
+}
+
+function isSelected(key, idx, label) {
+  const val = obAnswers[key];
+  if (!val) return false;
+  if (Array.isArray(val)) return val.includes(label);
+  return val === label;
+}
+
+function toggleObOption(key, idx, label, multi, maxSelect) {
+  if (multi) {
+    let arr = obAnswers[key] || [];
+    if (arr.includes(label)) {
+      arr = arr.filter(x => x !== label);
+    } else {
+      if (arr.length >= maxSelect) arr = arr.slice(1); // remove oldest if max reached
+      arr.push(label);
+    }
+    obAnswers[key] = arr;
+  } else {
+    obAnswers[key] = label;
+  }
+  renderObSlide(obStep);
+}
+
+function checkNameBtn() {
+  const val = document.getElementById('nameInput')?.value || '';
+  document.getElementById('obNext').disabled = !val.trim();
+}
+
+function renderObWelcome() {
+  const name = obAnswers.name || 'jou';
+  const vibes = obAnswers.vibe || ['Jouw stijl'];
+  const gelegs = obAnswers.gelegenheden || [];
+  const kleuren = obAnswers.kleuren || [];
+
+  const tags = [
+    ...(vibes || []),
+    ...(obAnswers.silhouet ? [obAnswers.silhouet] : []),
+    ...(gelegs.slice(0,2)),
+  ].filter(Boolean);
+
+  const container = document.getElementById('obSlideContainer');
+  container.innerHTML = `
+    <div class="ob-welcome">
+      <div class="ob-welcome-circle">✦</div>
+      <div style="font-family:var(--font-display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);margin-bottom:6px">Jouw Stijl DNA</div>
+      <div style="font-family:var(--font-display);font-size:38px;font-style:italic;color:var(--ink);margin-bottom:4px">
+        Hoi, ${name}!
+      </div>
+      <div style="font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:20px;max-width:280px">
+        Ik heb jouw stijlprofiel aangemaakt. Tijd om je garderobe te ontdekken.
+      </div>
+      <div class="ob-dna-tags">
+        ${tags.slice(0,5).map(t => `<div class="ob-dna-tag">${t}</div>`).join('')}
+        ${kleuren.slice(0,3).map(k => `<div class="ob-dna-tag">🎨 ${k}</div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function obNext() {
+  if (obStep === 0) {
+    const nameEl = document.getElementById('nameInput');
+    if (nameEl) obAnswers.name = nameEl.value.trim();
+    if (!obAnswers.name) return;
+  }
+
+  if (obStep < TOTAL_STEPS) {
+    obStep++;
+    renderObProgress();
+    renderObSlide(obStep);
+  } else {
+    // Done — save profile
+    finishOnboarding();
+  }
+}
+
+function obPrev() {
+  if (obStep > 0) {
+    obStep--;
+    renderObProgress();
+    renderObSlide(obStep);
+  }
+}
+
+function finishOnboarding() {
+  userProfile = {
+    name: obAnswers.name || 'Gebruiker',
+    stijlDNA: {
+      silhouet: obAnswers.silhouet || 'Gevarieerd per dag',
+      kleuren: obAnswers.kleuren || ['Zwart', 'Wit', 'Blauw'],
+      gelegenheden: obAnswers.gelegenheden || ['☀️ Dagelijks casual'],
+      materiaal: obAnswers.materiaal || ['Zacht & cozy'],
+      nogo: obAnswers.nogo || [],
+      vibe: obAnswers.vibe || ['Minimalistisch'],
+    },
+    createdAt: new Date().toISOString(),
+  };
+  localStorage.setItem('userProfile', JSON.stringify(userProfile));
+  startApp();
+}
+
+// ── APP INIT ─────────────────────────────────────────────
+function startApp() {
+  document.getElementById('onboarding').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+
+  // Avatar initials
+  const initials = userProfile.name.substring(0, 2).toUpperCase();
+  document.getElementById('avatarBtn').textContent = initials;
+
+  // Init
+  setDagkaartDate();
+  renderWardrobe();
+  renderDNA();
+  renderWeek();
+  initChat();
+  fetchWeather();
+  showTab('kast');
+}
+
+function restartOnboarding() {
+  obStep = 0;
+  obAnswers = {};
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('onboarding').style.display = 'flex';
+  initOnboarding();
+}
+
+// ── WEATHER ───────────────────────────────────────────────
+async function fetchWeather() {
+  try {
+    navigator.geolocation?.getCurrentPosition(async pos => {
+      const {latitude: lat, longitude: lon} = pos.coords;
+      const res = await fetch(`https://wttr.in/${lat},${lon}?format=%t+%C&lang=nl`);
+      if (res.ok) {
+        const text = await res.text();
+        const temp = text.match(/([\+\-]?\d+)/)?.[1] || '?';
+        const desc = text.split(' ').slice(1).join(' ').trim() || '';
+        const icon = temp > 22 ? '☀️' : temp > 15 ? '🌤' : temp > 8 ? '🌥' : '🧥';
+        document.getElementById('weatherIcon').textContent = icon;
+        document.getElementById('weatherText').textContent = `${temp}°C`;
+      }
+    });
+  } catch(e) {
+    document.getElementById('weatherText').textContent = 'Weer';
+  }
+}
+
+function refreshWeather() { fetchWeather(); }
+
+// ── DAGKAART ─────────────────────────────────────────────
+function setDagkaartDate() {
+  const days = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+  const months = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  const now = new Date();
+  document.getElementById('dagkaartDate').textContent =
+    `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
+
+  const name = userProfile?.name || '';
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
+  document.getElementById('dagkaartPrompt').textContent =
+    `${greeting}${name ? ', ' + name : ''}. Wat trek je aan?`;
+}
+
+function setMood(mood) {
+  currentMood = mood;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+async function generateDayOutfit() {
+  const allItems = getAllItems();
+  if (allItems.length === 0) {
+    toast('Voeg eerst items toe aan je garderobe');
+    return;
+  }
+
+  document.getElementById('outfitSheetTitle').textContent = 'Even denken... ✦';
+  document.getElementById('outfitResultItems').innerHTML = '<div style="text-align:center;padding:20px"><div class="spinner" style="border-color:rgba(0,0,0,.1);border-top-color:var(--terra)"></div></div>';
+  document.getElementById('outfitResultText').textContent = '';
+  openSheet('sheetOutfit');
+
+  const dna = userProfile?.stijlDNA || {};
+  const itemList = allItems.map(i => `${i.name} (${i.cat}${i.color ? ', '+i.color : ''})`).join(', ');
+
+  const prompt = `Je bent een persoonlijke stijlist. Stel een outfit samen voor ${userProfile.name} voor vandaag.
+
+Stijl DNA:
+- Silhouet: ${dna.silhouet}
+- Kleuren: ${(dna.kleuren||[]).join(', ')}
+- Vibe: ${(dna.vibe||[]).join(', ')}
+- Materiaalvoorkeur: ${(dna.materiaal||[]).join(', ')}
+- No-go's: ${(dna.nogo||[]).join(', ') || 'geen'}
+${currentMood ? `- Mood: ${currentMood}` : ''}
+
+Beschikbare items: ${itemList}
+
+Geef een concrete outfit van 2-4 items. Noem de exacte item namen uit de lijst en geef een korte stijltip van 2-3 zinnen. Antwoord direct en persoonlijk.`;
+
+  try {
+    const response = await callAI([{role:'user',content:prompt}]);
+    const text = response || 'Geen suggestie beschikbaar.';
+
+    // Parse item mentions
+    const matchedItems = allItems.filter(item =>
+      text.toLowerCase().includes(item.name.toLowerCase())
+    ).slice(0, 4);
+
+    document.getElementById('outfitSheetTitle').textContent = 'Jouw outfit ✦';
+    document.getElementById('outfitResultItems').innerHTML = matchedItems.length > 0
+      ? matchedItems.map(item => `
+        <div class="or-item">
+          <div class="or-thumb">${item.photo ? `<img src="${item.photo}">` : getItemEmoji(item)}</div>
+          <div class="or-name">${item.name}</div>
+        </div>`).join('')
+      : allItems.slice(0,3).map(item => `
+        <div class="or-item">
+          <div class="or-thumb">${item.photo ? `<img src="${item.photo}">` : getItemEmoji(item)}</div>
+          <div class="or-name">${item.name}</div>
+        </div>`).join('');
+
+    document.getElementById('outfitResultText').textContent = text;
+  } catch(e) {
+    document.getElementById('outfitResultText').textContent = 'Kan nu geen outfit genereren. Probeer later opnieuw.';
+  }
+}
+
+function wearOutfit() {
+  const today = new Date().toISOString().split('T')[0];
+  wornLog[today] = wornLog[today] || [];
+  closeSheet('sheetOutfit');
+  saveData();
+  toast('✓ Outfit gelogd voor vandaag');
+}
+
+// ── WARDROBE ─────────────────────────────────────────────
+function getAllItems() {
+  return Object.values(items).flat();
+}
+
+function getItemEmoji(item) {
+  const map = {tops:'👕', bottoms:'👖', jurken:'👗', layers:'🧥', shoes:'👟', bags:'👜', accessories:'💍'};
+  return map[item.cat] || '👔';
+}
+
+function renderWardrobe() {
+  const all = getAllItems();
+  const banner = document.getElementById('demoBanner');
+  const grid = document.getElementById('itemGrid');
+  const empty = document.getElementById('emptyState');
+  const count = document.getElementById('wardrobeCount');
+
+  count.textContent = `${all.length} ${all.length === 1 ? 'item' : 'items'}`;
+  banner.classList.toggle('hidden', all.length > 0);
+
+  let filtered = all;
+  if (currentFilter === 'ongedragen') {
+    const recentlyWorn = Object.keys(wornLog).filter(d => {
+      const days = (Date.now() - new Date(d)) / 86400000;
+      return days < 30;
+    });
+    filtered = all.filter(i => !recentlyWorn.includes(i.id));
+  } else if (currentFilter !== 'alle') {
+    filtered = items[currentFilter] || [];
+  }
+
+  if (filtered.length === 0 && all.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  grid.innerHTML = filtered.map(item => {
+    const today = new Date().toISOString().split('T')[0];
+    const worn = wornLog[today]?.includes(item.id);
+    return `
+    <div class="item-card" onclick="itemDetail('${item.id}')">
+      <div class="item-thumb">
+        ${item.photo ? `<img src="${item.photo}" alt="${item.name}">` : getItemEmoji(item)}
+        <div class="item-season">${item.seizoen === '☀️ Zomer' ? '☀️' : item.seizoen === '❄️ Winter' ? '❄️' : ''}</div>
+        ${worn ? '<div class="item-worn-badge">TODAY</div>' : ''}
+      </div>
+      <div class="item-info">
+        <div class="item-name">${item.name}</div>
+        <div class="item-cat">${getCatLabel(item.cat)}</div>
+        ${item.color ? `<div class="item-tags"><span class="item-tag">${item.color}</span></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getCatLabel(cat) {
+  return {tops:'Top',bottoms:'Broek/Rok',jurken:'Jurk',layers:'Laagje',shoes:'Schoenen',bags:'Tas',accessories:'Accessoire'}[cat] || cat;
+}
+
+function setFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderWardrobe();
+}
+
+function itemDetail(id) {
+  const item = getAllItems().find(i => i.id === id);
+  if (!item) return;
+  // Simple detail via toast for now — full detail sheet could be added
+  toast(`${item.name} · ${getCatLabel(item.cat)}`);
+}
+
+// ── ADD ITEM ──────────────────────────────────────────────
+function openAddItem() {
+  // Reset form
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemCat').value = 'tops';
+  document.querySelectorAll('.tag-option').forEach(t => t.classList.remove('selected'));
+  document.querySelector('#seizoenTags .tag-option:nth-child(3)').classList.add('selected');
+  document.getElementById('photoUpload').innerHTML = `
+    <div class="photo-upload-icon">📷</div>
+    <div class="photo-upload-text">Tik om foto te kiezen</div>
+    <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+  `;
+  currentPhotoData = null;
+  openSheet('sheetAddItem');
+}
+
+function toggleTag(el) {
+  el.classList.toggle('selected');
+}
+
+function toggleTagSingle(el, groupId) {
+  document.querySelectorAll(`#${groupId} .tag-option`).forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentPhotoData = e.target.result;
+    const upload = document.getElementById('photoUpload');
+    upload.innerHTML = `<img src="${currentPhotoData}" style="width:100%;height:100%;object-fit:cover;border-radius:calc(var(--radius-sm) - 2px)">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveItem() {
+  const name = document.getElementById('itemName').value.trim();
+  if (!name) { toast('Geef je item een naam'); return; }
+
+  const cat = document.getElementById('itemCat').value;
+  const colors = [...document.querySelectorAll('#colorTags .tag-option.selected')].map(t => t.textContent);
+  const fits = [...document.querySelectorAll('#fitTags .tag-option.selected')].map(t => t.textContent);
+  const seizoen = document.querySelector('#seizoenTags .tag-option.selected')?.textContent || '🌱 Beide';
+
+  const item = {
+    id: 'item_' + Date.now(),
+    name, cat,
+    color: colors[0] || '',
+    colors,
+    fit: fits[0] || '',
+    seizoen,
+    photo: currentPhotoData,
+    addedAt: new Date().toISOString(),
+  };
+
+  if (!items[cat]) items[cat] = [];
+  items[cat].push(item);
+  saveData();
+  renderWardrobe();
+  closeSheet('sheetAddItem');
+  toast(`✓ ${name} toegevoegd`);
+}
+
+// ── DEMO ITEMS ────────────────────────────────────────────
+function loadDemoItems() {
+  const demos = [
+    {cat:'tops', name:'Witte basic top', color:'Wit', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'tops', name:'Blauwe ribbeltrui', color:'Blauw', fit:'Licht oversized', seizoen:'❄️ Winter'},
+    {cat:'tops', name:'Zwarte blouse', color:'Zwart', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'tops', name:'Gestreepte breton top', color:'Zwart', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'tops', name:'Terracotta zijden blouse', color:'Oranje', fit:'Licht oversized', seizoen:'☀️ Zomer'},
+    {cat:'bottoms', name:'Zwarte slim broek', color:'Zwart', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'bottoms', name:'Jeans straight leg', color:'Blauw', fit:'Licht oversized', seizoen:'🌱 Beide'},
+    {cat:'bottoms', name:'Midi rok crème', color:'Beige', fit:'Flared', seizoen:'☀️ Zomer'},
+    {cat:'bottoms', name:'Zwarte minirok', color:'Zwart', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'jurken', name:'Donkerblauwe wrap jurk', color:'Blauw', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'jurken', name:'Gebloemde zomerjurk', color:'Roze', fit:'Wijd', seizoen:'☀️ Zomer'},
+    {cat:'layers', name:'Beige trenchcoat', color:'Beige', fit:'Licht oversized', seizoen:'🌱 Beide'},
+    {cat:'layers', name:'Zwarte blazer', color:'Zwart', fit:'Aansluitend', seizoen:'🌱 Beide'},
+    {cat:'shoes', name:'Witte sneakers', color:'Wit', fit:'', seizoen:'🌱 Beide'},
+    {cat:'shoes', name:'Zwarte enkellaarsjes', color:'Zwart', fit:'', seizoen:'❄️ Winter'},
+    {cat:'bags', name:'Camel leren tas', color:'Bruin', fit:'', seizoen:'🌱 Beide'},
+  ];
+
+  demos.forEach(d => {
+    const item = { id: 'demo_' + Date.now() + Math.random(), ...d, addedAt: new Date().toISOString(), photo: null };
+    if (!items[d.cat]) items[d.cat] = [];
+    items[d.cat].push(item);
+  });
+
+  saveData();
+  renderWardrobe();
+  document.getElementById('demoBanner').classList.add('hidden');
+  toast('✓ 16 basisitems geladen!');
+}
+
+// ── OUTFIT SUGGESTIES ─────────────────────────────────────
+function setOccasion(occ, el) {
+  currentOccasion = occ;
+  document.querySelectorAll('.occasion-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function togglePref(pref, el) {
+  currentPrefs[pref] = !currentPrefs[pref];
+  el.classList.toggle('active', currentPrefs[pref]);
+}
+
+async function generateOutfits() {
+  const allItems = getAllItems();
+  if (allItems.length === 0) {
+    toast('Voeg eerst items toe aan je garderobe');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtnText');
+  btn.innerHTML = '<span class="spinner"></span>';
+  document.getElementById('outfitCards').innerHTML = '';
+
+  const dna = userProfile?.stijlDNA || {};
+  const prefs = Object.entries(currentPrefs).filter(([k,v])=>v).map(([k])=>k).join(', ');
+  const itemList = allItems.map(i => `${i.name} (${i.cat}${i.color ? ', '+i.color : ''})`).join(', ');
+
+  const prompt = `Je bent een persoonlijke stijlist. Stel 3 complete outfits samen voor ${userProfile.name}.
+
+Gelegenheid: ${currentOccasion}
+Voorkeur: ${prefs}
+
+Stijl DNA:
+- Vibe: ${(dna.vibe||[]).join(', ')}
+- Kleuren: ${(dna.kleuren||[]).join(', ')}
+- Silhouet: ${dna.silhouet}
+- Materiaal: ${(dna.materiaal||[]).join(', ')}
+- No-go's: ${(dna.nogo||[]).join(', ') || 'geen'}
+
+Beschikbare items: ${itemList}
+
+Geef precies 3 outfits in dit formaat (elke outfit op een nieuwe regel):
+OUTFIT 1: [item1, item2, item3] | [2-zins stylingtip]
+OUTFIT 2: [item1, item2, item3] | [2-zins stylingtip]
+OUTFIT 3: [item1, item2, item3] | [2-zins stylingtip]`;
+
+  try {
+    const response = await callAI([{role:'user',content:prompt}]);
+    btn.textContent = 'Genereer outfits';
+    renderOutfitSuggestions(response, allItems);
+  } catch(e) {
+    btn.textContent = 'Genereer outfits';
+    document.getElementById('outfitCards').innerHTML =
+      `<div style="text-align:center;padding:24px;color:var(--ink2)">Kon geen outfits genereren. Probeer opnieuw.</div>`;
+  }
+}
+
+function renderOutfitSuggestions(text, allItems) {
+  const lines = text.split('\n').filter(l => l.includes('OUTFIT') || l.match(/^\d+:/));
+  const container = document.getElementById('outfitCards');
+
+  if (lines.length === 0) {
+    // fallback: parse text blocks
+    container.innerHTML = `
+      <div class="outfit-card">
+        <div class="outfit-items">${allItems.slice(0,3).map(i => `
+          <div class="outfit-item">
+            <div class="outfit-item-thumb">${i.photo ? `<img src="${i.photo}">` : getItemEmoji(i)}</div>
+            <div class="outfit-item-name">${i.name}</div>
+          </div>`).join('')}
+        </div>
+        <div class="outfit-desc">${text.slice(0,300)}</div>
+        <div class="outfit-actions">
+          <button class="outfit-action-btn like" onclick="toast('❤️ Opgeslagen!')">❤️ Like</button>
+          <button class="outfit-action-btn" onclick="generateOutfits()">↻ Andere</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = lines.slice(0,3).map((line, idx) => {
+    const parts = line.split('|');
+    const itemPart = parts[0] || '';
+    const tip = parts[1]?.trim() || '';
+
+    const matchedItems = allItems.filter(item =>
+      itemPart.toLowerCase().includes(item.name.toLowerCase().slice(0,8))
+    ).slice(0,4);
+
+    const showItems = matchedItems.length > 0 ? matchedItems : allItems.slice(idx*2, idx*2+3);
+
+    return `
+    <div class="outfit-card">
+      <div class="outfit-items">
+        ${showItems.map(i => `
+          <div class="outfit-item">
+            <div class="outfit-item-thumb">${i.photo ? `<img src="${i.photo}">` : getItemEmoji(i)}</div>
+            <div class="outfit-item-name">${i.name}</div>
+          </div>`).join('')}
+      </div>
+      ${tip ? `<div class="outfit-desc">${tip}</div>` : ''}
+      <div class="outfit-actions">
+        <button class="outfit-action-btn like" onclick="toast('❤️ Opgeslagen!')">❤️ Like</button>
+        <button class="outfit-action-btn" onclick="toast('✕ Genoteerd')">✕ Niet dit</button>
+        <button class="outfit-action-btn" onclick="toast('📋 Toegevoegd aan board')">+ Board</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CHAT ─────────────────────────────────────────────────
+function initChat() {
+  const name = userProfile?.name || 'je';
+  const dna = userProfile?.stijlDNA || {};
+  const greeting = `Hoi ${name}! Ik ben jouw persoonlijke stylist. ${
+    dna.vibe?.length ? `Ik zie dat je een ${dna.vibe.join(' & ')} vibe hebt — ` : ''
+  }ik kan je helpen met outfitkeuzes, combinatietips en garderobeinzichten. Wat kan ik voor je doen?`;
+
+  addChatMsg('ai', greeting);
+}
+
+function buildSystemPrompt() {
+  if (!userProfile) return 'Je bent een persoonlijke digitale stijlist.';
+  const {name, stijlDNA: dna} = userProfile;
+  const allItems = getAllItems();
+  const itemSummary = allItems.length > 0
+    ? `Garderobe (${allItems.length} items): ${allItems.slice(0,20).map(i=>i.name).join(', ')}${allItems.length > 20 ? '...' : ''}`
+    : 'Garderobe is nog leeg.';
+
+  return `Je bent de persoonlijke digitale stijlist van ${name}. Spreek haar aan met haar naam.
+
+Stijl DNA van ${name}:
+- Silhouetvoorkeur: ${dna?.silhouet || 'nog niet ingesteld'}
+- Kleuren: ${(dna?.kleuren||[]).join(', ') || 'nog niet ingesteld'}
+- Gelegenheden: ${(dna?.gelegenheden||[]).join(', ') || 'divers'}
+- Materiaalvoorkeur: ${(dna?.materiaal||[]).join(', ') || 'divers'}
+- Stijl vibe: ${(dna?.vibe||[]).join(' & ') || 'divers'}
+- No-go's: ${(dna?.nogo||[]).join(', ') || 'geen'}
+
+${itemSummary}
+
+Geef concrete, persoonlijke adviezen. Gebruik Nederlandse modetermen. Wees enthousiast maar beknopt. Verwijs specifiek naar haar items als je outfit-combinaties geeft.`;
+}
+
+function addChatMsg(role, text) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+
+  // Simple markdown-like formatting
+  bubble.innerHTML = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+
+  if (role === 'ai') {
+    const avatar = document.createElement('div');
+    avatar.className = 'chat-avatar';
+    avatar.textContent = '✦';
+    div.appendChild(avatar);
+  }
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  chatHistory.push({role: role === 'ai' ? 'assistant' : 'user', content: text});
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ai';
+  div.id = 'typingIndicator';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'chat-avatar';
+  avatar.textContent = '✦';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble chat-typing';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typingIndicator')?.remove();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('chatSend').disabled = true;
+  document.getElementById('quickPrompts').classList.add('hidden');
+
+  addChatMsg('user', text);
+  showTyping();
+
+  try {
+    const messages = [
+      ...chatHistory.slice(-10).filter(m => m.content !== chatHistory[chatHistory.length-1]?.content || m.role !== 'user'),
+    ];
+    // chatHistory already has the user msg appended by addChatMsg, so use it
+    const response = await callAI(
+      chatHistory.slice(-12).map(m => ({role:m.role,content:m.content})),
+      buildSystemPrompt()
+    );
+    removeTyping();
+    addChatMsg('ai', response);
+  } catch(e) {
+    removeTyping();
+    addChatMsg('ai', 'Even geduld — ik kan nu niet antwoorden. Probeer het over een moment opnieuw.');
+  }
+
+  document.getElementById('chatSend').disabled = false;
+}
+
+function sendQuickPrompt(el) {
+  document.getElementById('chatInput').value = el.textContent;
+  sendChat();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── DNA DISPLAY ───────────────────────────────────────────
+function renderDNA() {
+  if (!userProfile) return;
+  const {name, stijlDNA: dna} = userProfile;
+
+  const colorMap = {
+    'Zwart':'#1C1612','Wit':'#FDFAF6','Crème':'#F5E6C8','Bruin':'#8B6F5E',
+    'Navy':'#1B3A5C','Terra':'#C4714A','Mauve':'#D4A0A0','Paars':'#8B5E83',
+    'Roze':'#E8A0B0','Groen':'#4A7A5E','Goud':'#C4A84A','Lichtblauw':'#A0B4C8',
+    'Blauw':'#4A6FA5','Beige':'#D4B896','Oranje':'#D4834A','Grijs':'#8B8B8B',
+    'Geel':'#D4C44A','Rood':'#C44A4A',
+  };
+
+  const vibeStr = (dna.vibe||[]).join(' · ');
+  const silhouetStr = dna.silhouet || 'Gevarieerd';
+  const kleuren = dna.kleuren || [];
+  const gelegs = dna.gelegenheden || [];
+  const mat = dna.materiaal || [];
+  const nogo = dna.nogo || [];
+
+  document.getElementById('dnaContent').innerHTML = `
+    <div class="dna-hero">
+      <div class="dna-hero-name">${name}</div>
+      <div class="dna-hero-sub">Persoonlijk stijlprofiel</div>
+      <div class="dna-vibes">
+        ${(dna.vibe||[]).map(v => `<div class="dna-vibe-tag">${v}</div>`).join('')}
+        ${(dna.gelegenheden||[]).slice(0,3).map(g => `<div class="dna-vibe-tag">${g.split(' ').slice(1).join(' ')}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="dna-section">
+      <div class="dna-section-title">🎨 Kleurenpalet</div>
+      <div class="color-dots">
+        ${kleuren.map(k => `
+          <div class="color-dot-item">
+            <div class="color-dot-circle" style="background:${colorMap[k]||'#888'};${k==='Wit'?'border:1px solid #DDD':''}"></div>
+            <div class="color-dot-name">${k}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="dna-section">
+      <div class="dna-section-title">👗 Silhouet</div>
+      <div style="font-size:14px;color:var(--ink);line-height:1.6">${silhouetStr}</div>
+    </div>
+
+    <div class="dna-section">
+      <div class="dna-section-title">🧵 Materiaalvoorkeur</div>
+      <div class="dna-chips" style="display:flex;flex-wrap:wrap;gap:8px">
+        ${mat.map(m => `<div class="item-tag">${m}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="dna-section">
+      <div class="dna-section-title">📅 Gelegenheden</div>
+      <div class="dna-chips" style="display:flex;flex-wrap:wrap;gap:8px">
+        ${gelegs.map(g => `<div class="item-tag">${g}</div>`).join('')}
+      </div>
+    </div>
+
+    ${nogo.length > 0 ? `
+    <div class="dna-section">
+      <div class="dna-section-title">🚫 Stijl no-go's</div>
+      <div class="dna-chips" style="display:flex;flex-wrap:wrap;gap:8px">
+        ${nogo.map(n => `<div class="item-tag" style="background:#FEE4E4;color:#C44A4A">${n}</div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ── WEEK PLANNER ─────────────────────────────────────────
+function renderWeek() {
+  const days = ['Zo','Ma','Di','Wo','Do','Vr','Za'];
+  const months = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  const now = new Date();
+  const today = now.getDay(); // 0=Sun
+
+  const grid = document.getElementById('weekGrid');
+  let html = '';
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - today + i);
+    const isToday = i === today;
+    const dateKey = d.toISOString().split('T')[0];
+    const hasOutfit = wornLog[dateKey]?.length > 0;
+
+    html += `
+    <div class="week-day ${isToday ? 'today' : ''}">
+      <div class="week-day-date">
+        <div class="week-day-num" style="color:${isToday ? 'var(--terra)' : 'var(--ink)'}">${d.getDate()}</div>
+        <div class="week-day-name">${days[d.getDay()]}</div>
+      </div>
+      <div class="week-day-outfit">
+        ${hasOutfit ? `<div class="week-outfit-label">Outfit gelogd ✓</div>` :
+          `<div class="week-outfit-label" style="color:var(--soft)">Geen outfit gepland</div>`}
+      </div>
+      ${isToday ? `<button style="background:var(--terra);color:white;border:none;border-radius:100px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body)" onclick="showTab('kast')">Plan</button>` :
+        `<div class="week-add-icon">+</div>`}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ── AI CALL ───────────────────────────────────────────────
+async function callAI(messages, systemPrompt) {
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1000,
+    messages,
+  };
+  if (systemPrompt) body.system = systemPrompt;
+
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) throw new Error(`Worker error ${res.status}`);
+  const data = await res.json();
+
+  // Handle both direct Claude response and worker-wrapped response
+  if (data.content?.[0]?.text) return data.content[0].text;
+  if (data.message) return data.message;
+  if (data.text) return data.text;
+  throw new Error('Onverwacht antwoord van worker');
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+  document.getElementById(`nav-${tab}`)?.classList.add('active');
+
+  // Hide FAB on chat/dna tabs
+  document.getElementById('fabAdd').classList.toggle('hidden', tab === 'chat' || tab === 'dna' || tab === 'week');
+}
+
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function saveData() {
+  localStorage.setItem('items', JSON.stringify(items));
+  localStorage.setItem('wornLog', JSON.stringify(wornLog));
+}
+
+// ── BOOT ─────────────────────────────────────────────────
+if (userProfile) {
+  document.getElementById('onboarding').style.display = 'none';
+  startApp();
+} else {
+  initOnboarding();
+}
+</script>
+</body>
+</html>
