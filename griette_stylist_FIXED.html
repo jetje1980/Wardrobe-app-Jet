@@ -9551,215 +9551,143 @@ function openSwapPicker(evtOrBtn) {
 
 // ============ CAPSULE OVERZICHT PER BOARD ============
 function showCapsuleOverzicht(boardId) {
-  // Always remove existing overlay first to get fresh data
-  var existing = document.getElementById('capsule-overlay');
-  if (existing) existing.remove();
+  var ex = document.getElementById('capsule-overlay');
+  if (ex) { ex.remove(); return; }
   var board = boards.find(function(b){ return b.id===boardId; });
   if (!board) return;
 
-  // Collect all unique items + count by category
-  var allItems2 = getAllItems();
-  var itemMap = {}; // id -> {item, outfitCount}
+  // Collect unique items from all outfits
+  var allItems3 = getAllItems();
+  var capsuleMap = {}; // id -> {item, count}
   (board.outfits||[]).forEach(function(o){
     (o.items||[]).forEach(function(id){
-      if (!itemMap[id]) itemMap[id] = {item: allItems2.find(function(i){return i.id===id;}), count:0};
-      itemMap[id].count++;
+      var it = allItems3.find(function(i){return i.id===id;});
+      if (!it) return;
+      if (!capsuleMap[id]) capsuleMap[id] = {item:it, count:0};
+      capsuleMap[id].count++;
     });
   });
 
-  var catOrder = ['tops','bottoms','jurken','layers','shoes','bags','accessories'];
-  var catLabels2 = {tops:'Tops',bottoms:'Rokken & Broeken',jurken:'Jurken',layers:'Laagjes',shoes:'Schoenen',bags:'Tassen',accessories:'Accessoires'};
-  var byCat = {};
-  Object.values(itemMap).forEach(function(e){
-    if (!e.item) return;
-    if (!byCat[e.item.cat]) byCat[e.item.cat] = [];
-    byCat[e.item.cat].push(e);
-  });
+  var capsuleIds = Object.keys(capsuleMap);
+  var totalItems = capsuleIds.length;
+  var totalOutfits = (board.outfits||[]).length;
 
-  var totalItems = Object.keys(itemMap).length;
-  var totalOutfits = board.outfits.length;
-  // Estimate possible combos: tops * (bottoms+jurken) * shoes
-  var nTops = (byCat.tops||[]).length + (byCat.jurken||[]).length;
-  var nBot = (byCat.bottoms||[]).length + (byCat.jurken||[]).length;
-  var nShoe = (byCat.shoes||[]).length;
-  var possibleCombos = nTops > 0 && nShoe > 0 ? nTops * Math.max(nBot,1) * nShoe : 0;
-  var kofferHint = totalItems<=7?'handbagage':totalItems<=15?'1 koffer':'2 koffers';
-
+  // Build overlay
   var overlay = document.createElement('div');
   overlay.id = 'capsule-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:700;display:flex;align-items:flex-end;';
   var sheet = document.createElement('div');
-  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:20px 16px 50px;';
+  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 16px 60px;';
 
-  // Stats row
-  var statsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">';
-  [[totalItems + ' items', kofferHint], [totalOutfits + ' outfits', 'gemaakt'], [possibleCombos + ' combos', 'mogelijk']].forEach(function(s){
-    statsHtml += '<div style="background:var(--white);border-radius:12px;padding:12px 8px;text-align:center;border:1.5px solid var(--cream-dark);">'
-      +'<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--brown);">'+s[0]+'</div>'
-      +'<div style="font-size:9px;color:var(--muted);">'+s[1]+'</div></div>';
-  });
-  statsHtml += '</div>';
-
-  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
-    + '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);margin-bottom:4px;">\uD83D\uDCCB ' + board.label + '</div>'
-    + '<p style="font-size:11px;color:var(--muted);margin-bottom:14px;">Alle unieke items die je meeneemt.</p>'
-    + statsHtml
-    + '<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--cream-dark);margin-top:12px;">'
-    + '<button id="cap-tab-items" onclick="capSwitchTab(\'items\')" style="flex:1;padding:10px;background:transparent;border:none;border-bottom:2px solid var(--brown);margin-bottom:-2px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--brown);font-weight:600;">Items</button>'
-    + '<button id="cap-tab-combos" onclick="capSwitchTab(\'combos\')" style="flex:1;padding:10px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);">Wat-als</button>'
+  // Header
+  var headerHtml = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--brown);margin-bottom:4px;">' + board.emoji + ' ' + board.label + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">'
+    + '<div style="background:var(--white);border-radius:10px;padding:10px 6px;text-align:center;border:1.5px solid var(--cream-dark);"><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--brown);">' + totalItems + '</div><div style="font-size:9px;color:var(--muted);">' + (totalItems<=7?'handbagage':totalItems<=15?'1 koffer':'2 koffers') + '</div></div>'
+    + '<div style="background:var(--white);border-radius:10px;padding:10px 6px;text-align:center;border:1.5px solid var(--cream-dark);"><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--brown);">' + totalOutfits + '</div><div style="font-size:9px;color:var(--muted);">outfits</div></div>'
+    + '<div style="background:var(--white);border-radius:10px;padding:10px 6px;text-align:center;border:1.5px solid var(--cream-dark);"><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--brown);">' + (board.settings&&board.settings.days?board.settings.days:'?') + '</div><div style="font-size:9px;color:var(--muted);">dagen</div></div>'
     + '</div>'
-    + '<div id="cap-pane-items"></div>'
-    + '<div id="cap-pane-combos" style="display:none;"></div>';
+    // Instructions
+    + '<div style="background:rgba(155,98,64,0.08);border-radius:12px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--brown);line-height:1.6;">'
+    + '<strong>Items wegklikken</strong> om ze uit de capsule te halen. <strong>+ Toevoegen</strong> voor ontbrekende items. Dan <strong>Genereer opnieuw</strong>.</div>';
 
-  setTimeout(function(){
-    var paneItems = document.getElementById('cap-pane-items');
-    if (paneItems) {
-  // Items per category
-  catOrder.forEach(function(cat){
-    var catItems = byCat[cat];
-    if (!catItems || !catItems.length) return;
-    var secEl = document.createElement('div');
-    secEl.innerHTML = '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;margin-top:4px;">' + (catLabels2[cat]||cat) + ' \u00b7 ' + catItems.length + ' item' + (catItems.length>1?'s':'') + '</div>';
-    var grid2 = document.createElement('div');
-    grid2.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
-    catItems.forEach(function(e2){
-      var d2 = document.createElement('div');
-      d2.style.cssText = 'text-align:center;width:60px;';
-      var ph2 = photos[e2.item.id]?'<img src="'+photos[e2.item.id]+'" style="width:60px;height:74px;border-radius:8px;object-fit:cover;">'
-        :'<div style="width:60px;height:74px;border-radius:8px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;color:var(--muted);padding:3px;text-align:center;">'+e2.item.name.split(' ')[0]+'</span></div>';
-      d2.innerHTML = ph2
-        +'<div style="font-size:7px;color:var(--brown);margin-top:3px;line-height:1.2;">'+(e2.item.name.length>10?e2.item.name.substring(0,9)+'\u2026':e2.item.name)+'</div>'
-        +'<div style="font-size:7px;color:var(--muted);">'+e2.count+'x in outfit</div>';
-      grid2.appendChild(d2);
-    });
-    secEl.appendChild(grid2);
-    paneItems.appendChild(secEl);
-  });
+  sheet.innerHTML = headerHtml;
 
-    }
-  }, 50);
+  // Active capsule set (starts with all items)
+  var activeCaps = new Set(capsuleIds);
+  var extraMap = {}; // extra items added from wardrobe
 
-  setTimeout(function(){
-    var paneCombos = document.getElementById('cap-pane-combos');
-    if (paneCombos) {
-  // ── COMBO BUILDER SECTION ──
-  // activeCapsule = items currently active (started = all capsule items)
-  // extraItems = items added from full wardrobe
-  var activeCapsule = new Set(Object.keys(itemMap));
-  var extraItems = {}; // id -> item (added from wardrobe)
+  // Item grid
+  var gridSection = document.createElement('div');
+  gridSection.style.cssText = 'margin-bottom:14px;';
 
-  var comboSection = document.createElement('div');
-  comboSection.style.cssText = 'margin-top:4px;';
-  comboSection.innerHTML = '<p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Klik items weg die je <strong>niet</strong> wil meenemen. Voeg items toe die je mist. Tik dan op Genereer om nieuwe outfits te maken.</p>';
+  function renderGrid() {
+    gridSection.innerHTML = '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Capsule items (' + activeCaps.size + ')</div>';
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
 
-  function refreshComboGrid() {
-    var grid4 = document.getElementById('combo-whatif-grid');
-    if (!grid4) return;
-    grid4.innerHTML = '';
-    // All capsule items
-    var allCap = Object.values(itemMap).filter(function(e){return e.item;});
-    // Plus extra items
-    Object.values(extraItems).forEach(function(it){
-      if (!allCap.find(function(e){return e.item.id===it.id;}))
-        allCap.push({item:it, count:0, extra:true});
-    });
-    allCap.forEach(function(e4){
-      var itm4 = e4.item;
-      var isActive = activeCapsule.has(itm4.id);
-      var isExtra = !!e4.extra;
-      var d4 = document.createElement('div');
-      d4.style.cssText = 'text-align:center;width:54px;cursor:pointer;border-radius:8px;border:2px solid '
-        +(isExtra?'var(--brown-warm)':isActive?'var(--cream-dark)':'#ddd')+';overflow:hidden;'
-        +(isActive?'':'opacity:0.35;');
-      var ph4 = photos[itm4.id]
-        ? '<img src="'+photos[itm4.id]+'" style="width:54px;height:66px;object-fit:cover;">'
-        : '<div style="width:54px;height:66px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;">'+itm4.name.split(' ')[0]+'</span></div>';
-      var strikeStyle = isActive ? '' : 'text-decoration:line-through;';
-      d4.innerHTML = ph4
-        + '<div style="font-size:7px;color:var(--brown);padding:2px;line-height:1.1;'+strikeStyle+'">'
-        + (itm4.name.length>9?itm4.name.substring(0,8)+'\u2026':itm4.name)+'</div>'
-        + (isExtra ? '<div style="font-size:6px;color:var(--brown-warm);padding-bottom:2px;">+ extra</div>' : '');
-      d4.addEventListener('click', (function(it4, isEx){
+    // All items: capsule + extras
+    var allDisplay = Object.values(capsuleMap).map(function(e){return {item:e.item, extra:false};});
+    Object.values(extraMap).forEach(function(it){ allDisplay.push({item:it, extra:true}); });
+
+    allDisplay.forEach(function(e) {
+      var it = e.item;
+      var active = activeCaps.has(it.id);
+      var d = document.createElement('div');
+      d.style.cssText = 'width:60px;cursor:pointer;text-align:center;border-radius:8px;overflow:hidden;border:2px solid '
+        + (e.extra?'var(--brown-warm)':active?'var(--cream-dark)':'#ddd') + ';'
+        + (active?'':'opacity:0.3;');
+      var ph = photos[it.id]
+        ? '<img src="'+photos[it.id]+'" style="width:60px;height:72px;object-fit:cover;">'
+        : '<div style="width:60px;height:72px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:var(--muted);padding:3px;text-align:center;">'+it.name.split(' ').slice(0,2).join(' ')+'</span></div>';
+      var strike = active?'':'text-decoration:line-through;';
+      d.innerHTML = ph + '<div style="font-size:7px;color:var(--brown);padding:3px;'+strike+'">'+(it.name.length>10?it.name.substring(0,9)+'…':it.name)+'</div>'
+        + (e.extra?'<div style="font-size:6px;color:var(--brown-warm);padding-bottom:2px;">+extra</div>':'');
+      d.addEventListener('click', (function(itemId){
         return function(){
-          if (activeCapsule.has(it4.id)) {
-            activeCapsule.delete(it4.id);
-          } else {
-            activeCapsule.add(it4.id);
-          }
-          updateComboBtn();
-          refreshComboGrid();
+          if (activeCaps.has(itemId)) activeCaps.delete(itemId);
+          else activeCaps.add(itemId);
+          renderGrid();
+          updateGenBtn();
         };
-      })(itm4, isExtra));
-      grid4.appendChild(d4);
+      })(it.id));
+      grid.appendChild(d);
     });
+    gridSection.appendChild(grid);
   }
 
-  function updateComboBtn() {
-    var btn5 = document.getElementById('combo-gen-btn');
-    if (!btn5) return;
-    var n = activeCapsule.size;
-    btn5.textContent = n > 0
-      ? '\u2756 Maak combos met deze ' + n + ' items'
-      : '\u2756 Selecteer minimaal 1 item';
-    btn5.disabled = n === 0;
-  }
+  renderGrid();
+  sheet.appendChild(gridSection);
 
-  var comboGrid = document.createElement('div');
-  comboGrid.id = 'combo-whatif-grid';
-  comboGrid.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;';
-  comboSection.appendChild(comboGrid);
-
-  // + Extra item knop
-  var addExtraBtn = document.createElement('button');
-  addExtraBtn.style.cssText = 'width:100%;padding:10px;background:var(--white);color:var(--brown);border:1.5px dashed var(--brown-warm);border-radius:10px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:10px;';
-  addExtraBtn.textContent = '+ Extra item toevoegen uit garderobe';
-  addExtraBtn.addEventListener('click', function(){
-    // Open picker from full wardrobe
-    openExtraItemPicker(function(item) {
-      extraItems[item.id] = item;
-      activeCapsule.add(item.id);
-      updateComboBtn();
-      refreshComboGrid();
+  // + Toevoegen knop
+  var addBtn2 = document.createElement('button');
+  addBtn2.style.cssText = 'width:100%;padding:10px;background:var(--white);color:var(--brown);border:1.5px dashed var(--brown-warm);border-radius:10px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:12px;';
+  addBtn2.textContent = '+ Item toevoegen uit garderobe';
+  addBtn2.addEventListener('click', function(){
+    openExtraItemPicker(function(newItem){
+      extraMap[newItem.id] = newItem;
+      activeCaps.add(newItem.id);
+      renderGrid();
+      updateGenBtn();
     });
   });
-  comboSection.appendChild(addExtraBtn);
+  sheet.appendChild(addBtn2);
 
-  var comboGenBtn = document.createElement('button');
-  comboGenBtn.id = 'combo-gen-btn';
-  comboGenBtn.style.cssText = 'width:100%;padding:13px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:8px;';
-  comboGenBtn.textContent = '\u2756 Genereer outfits van deze capsule';
-  comboGenBtn.addEventListener('click', function(){
-    if (activeCapsule.size === 0) { showToast('Selecteer minimaal 1 item'); return; }
+  // Genereer opnieuw knop
+  var genBtn2 = document.createElement('button');
+  genBtn2.id = 'cap-gen-btn';
+  genBtn2.style.cssText = 'width:100%;padding:13px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:8px;';
+  genBtn2.textContent = '❖ Genereer outfits van deze capsule (' + activeCaps.size + ' items)';
+  genBtn2.addEventListener('click', function(){
+    if (activeCaps.size === 0) { showToast('Selecteer minimaal 1 item'); return; }
     overlay.remove();
-    // Pass capsule restriction to board generator
-    _builderCapsuleIds = new Set(Array.from(activeCapsule));
+    _builderCapsuleIds = new Set(Array.from(activeCaps));
     _builderTargetBoardId = boardId;
-    var bs2 = getBoardSettings(boardId);
-    var days2 = bs2.days || 7;
-    var counts2 = {
-      tops: Math.ceil(days2 * 0.8),
-      bottoms: Math.ceil(days2 * 0.5),
-      jurken: Math.ceil(days2 * 0.2),
-      layers: Math.min(Math.ceil(days2 * 0.3), 4),
-      shoes: Math.min(Math.ceil(days2 * 0.2), 3)
+    var bs3 = getBoardSettings(boardId);
+    var days3 = bs3.days || 7;
+    var counts3 = {
+      tops: Math.ceil(days3*0.8),
+      bottoms: Math.ceil(days3*0.5),
+      jurken: Math.ceil(days3*0.2),
+      layers: Math.min(Math.ceil(days3*0.3),4),
+      shoes: Math.min(Math.ceil(days3*0.2),3)
     };
-    generateBoardOutfitsWithCounts(boardId, counts2, '');
+    generateBoardOutfitsWithCounts(boardId, counts3, '');
   });
-  comboSection.appendChild(comboGenBtn);
-  comboSection.appendChild(comboGenBtn);
-  paneCombos.appendChild(comboSection);
 
-  refreshComboGrid();
-  updateComboBtn();
+  function updateGenBtn() {
+    genBtn2.textContent = '❖ Genereer outfits van deze capsule (' + activeCaps.size + ' items)';
+    genBtn2.disabled = activeCaps.size === 0;
+  }
 
-  var closeBtn2 = document.createElement('button');
-  closeBtn2.style.cssText = 'width:100%;padding:11px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-top:8px;';
-  closeBtn2.textContent = 'Sluiten';
-  closeBtn2.addEventListener('click', function(){ overlay.remove(); });
-    }
-  }, 50);
+  sheet.appendChild(genBtn2);
 
-  sheet.appendChild(closeBtn2);
+  var closeBtn3 = document.createElement('button');
+  closeBtn3.style.cssText = 'width:100%;padding:10px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);';
+  closeBtn3.textContent = 'Sluiten';
+  closeBtn3.addEventListener('click', function(){ overlay.remove(); });
+  sheet.appendChild(closeBtn3);
+
   overlay.appendChild(sheet);
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
