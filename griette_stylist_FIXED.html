@@ -7627,11 +7627,13 @@ function filterBottomsByPref(bottomPool) {
 
 // ============ OUTFIT BUILDER (ZELF SAMENSTELLEN) ============
 var _builderItems = []; // selected item IDs
+var _builderCapsuleIds = null; // if set, restrict to these IDs only
 
 function openOutfitBuilder() {
   var existing = document.getElementById('outfit-builder-overlay');
   if (existing) existing.remove();
   _builderItems = [];
+  _builderCapsuleIds = null; // full wardrobe
 
   var overlay = document.createElement('div');
   overlay.id = 'outfit-builder-overlay';
@@ -7744,7 +7746,12 @@ async function generateFromBuilder() {
   var overlay = document.getElementById('outfit-builder-overlay');
   if (overlay) overlay.remove();
 
-  var allItems = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+  // If called from capsule overview, restrict to capsule items only
+  var allItems = getAllItems().filter(function(i){
+    if (deletedItemIds.has(i.id)) return false;
+    if (_builderCapsuleIds) return _builderCapsuleIds.has(i.id);
+    return true;
+  });
   var chosen = _builderItems.map(function(id){
     var it = allItems.find(function(i){ return i.id===id; });
     if (!it) return null;
@@ -7776,14 +7783,19 @@ async function generateFromBuilder() {
   if (needsBottom) missingHint.push('een rok of broek (tenzij jurk gekozen)');
   if (needsShoes) missingHint.push('schoenen (VERPLICHT)');
 
+  var capsuleContext = _builderCapsuleIds
+    ? 'BELANGRIJK: Gebruik UITSLUITEND items uit de lijst hieronder. Geen enkel ander item.\n\n'
+    : '';
+
   var prompt = 'Je bent Griette\'s stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken.\n\n'
+    + capsuleContext
     + (chosen.length ? 'GEKOZEN ITEMS (moeten in elke outfit):\n' + chosen.join('\n') + '\n\n' : '')
     + 'BESCHIKBARE ITEMS PER CATEGORIE:\n' + restFormatted + '\n\n'
     + 'Maak 3 complete outfits. '
     + (chosen.length ? 'De gekozen items MOETEN erin. ' : '')
     + (missingHint.length ? 'Voeg toe uit de lijst hierboven: ' + missingHint.join(', ') + '. ' : '')
     + 'MAX 4 items. Elke outfit moet schoenen bevatten.\n'
-    + 'Gebruik ALLEEN exacte namen uit de lijsten hierboven.\n'
+    + 'Gebruik ALLEEN exacte namen uit de lijsten hierboven. Niets verzinnen.\n'
     + 'Geef ALLEEN JSON:\n'
     + '[{"naam":"...","items":["exacte top","exacte rok/broek","exacte schoenen"],"tip":"stijltip"}]';
 
@@ -9558,73 +9570,106 @@ function showCapsuleOverzicht(boardId) {
   });
 
   // ── COMBO BUILDER SECTION ──
+  // activeCapsule = items currently active (started = all capsule items)
+  // extraItems = items added from full wardrobe
+  var activeCapsule = new Set(Object.keys(itemMap));
+  var extraItems = {}; // id -> item (added from wardrobe)
+
   var comboSection = document.createElement('div');
   comboSection.style.cssText = 'margin-top:20px;padding-top:16px;border-top:1.5px solid var(--cream-dark);';
-  comboSection.innerHTML = '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">\u2756 Nieuwe combo maken</div>'
-    + '<p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Tik items aan uit de lijst hierboven \u2014 de stylist maakt er een outfit van voor dit board.</p>';
+  comboSection.innerHTML = '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:4px;">\u2756 Wat-als combinaties</div>'
+    + '<p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Klik items weg om te testen. Voeg een extra item toe als je iets mist. Dan maakt de stylist combos met wat overblijft.</p>';
 
-  // Selected items preview
-  var comboSelected = [];
-  var selPreview = document.createElement('div');
-  selPreview.id = 'combo-sel-preview';
-  selPreview.style.cssText = 'display:flex;gap:6px;min-height:60px;padding:8px;background:var(--white);border-radius:10px;border:1.5px dashed var(--cream-dark);margin-bottom:10px;overflow-x:auto;scrollbar-width:none;align-items:center;';
-  selPreview.innerHTML = '<span style="font-size:10px;color:var(--muted);font-style:italic;">Tik items aan hieronder...</span>';
-  comboSection.appendChild(selPreview);
+  function refreshComboGrid() {
+    var grid4 = document.getElementById('combo-whatif-grid');
+    if (!grid4) return;
+    grid4.innerHTML = '';
+    // All capsule items
+    var allCap = Object.values(itemMap).filter(function(e){return e.item;});
+    // Plus extra items
+    Object.values(extraItems).forEach(function(it){
+      if (!allCap.find(function(e){return e.item.id===it.id;}))
+        allCap.push({item:it, count:0, extra:true});
+    });
+    allCap.forEach(function(e4){
+      var itm4 = e4.item;
+      var isActive = activeCapsule.has(itm4.id);
+      var isExtra = !!e4.extra;
+      var d4 = document.createElement('div');
+      d4.style.cssText = 'text-align:center;width:54px;cursor:pointer;border-radius:8px;border:2px solid '
+        +(isExtra?'var(--brown-warm)':isActive?'var(--cream-dark)':'#ddd')+';overflow:hidden;'
+        +(isActive?'':'opacity:0.35;');
+      var ph4 = photos[itm4.id]
+        ? '<img src="'+photos[itm4.id]+'" style="width:54px;height:66px;object-fit:cover;">'
+        : '<div style="width:54px;height:66px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;">'+itm4.name.split(' ')[0]+'</span></div>';
+      var strikeStyle = isActive ? '' : 'text-decoration:line-through;';
+      d4.innerHTML = ph4
+        + '<div style="font-size:7px;color:var(--brown);padding:2px;line-height:1.1;'+strikeStyle+'">'
+        + (itm4.name.length>9?itm4.name.substring(0,8)+'\u2026':itm4.name)+'</div>'
+        + (isExtra ? '<div style="font-size:6px;color:var(--brown-warm);padding-bottom:2px;">+ extra</div>' : '');
+      d4.addEventListener('click', (function(it4, isEx){
+        return function(){
+          if (activeCapsule.has(it4.id)) {
+            activeCapsule.delete(it4.id);
+          } else {
+            activeCapsule.add(it4.id);
+          }
+          updateComboBtn();
+          refreshComboGrid();
+        };
+      })(itm4, isExtra));
+      grid4.appendChild(d4);
+    });
+  }
 
-  // Clickable item grid from capsule
+  function updateComboBtn() {
+    var btn5 = document.getElementById('combo-gen-btn');
+    if (!btn5) return;
+    var n = activeCapsule.size;
+    btn5.textContent = n > 0
+      ? '\u2756 Maak combos met deze ' + n + ' items'
+      : '\u2756 Selecteer minimaal 1 item';
+    btn5.disabled = n === 0;
+  }
+
   var comboGrid = document.createElement('div');
+  comboGrid.id = 'combo-whatif-grid';
   comboGrid.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;';
-  Object.values(itemMap).forEach(function(e3){
-    if (!e3.item) return;
-    var d3 = document.createElement('div');
-    d3.id = 'csel-' + e3.item.id;
-    d3.style.cssText = 'text-align:center;width:54px;cursor:pointer;border-radius:8px;border:2px solid var(--cream-dark);overflow:hidden;';
-    var ph3 = photos[e3.item.id]
-      ? '<img src="'+photos[e3.item.id]+'" style="width:54px;height:66px;object-fit:cover;">'
-      : '<div style="width:54px;height:66px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;">'+e3.item.name.split(' ')[0]+'</span></div>';
-    d3.innerHTML = ph3 + '<div style="font-size:7px;color:var(--brown);padding:2px;line-height:1.1;">'+(e3.item.name.length>9?e3.item.name.substring(0,8)+'\u2026':e3.item.name)+'</div>';
-    d3.addEventListener('click', (function(itm){
-      return function(){
-        var idx3 = comboSelected.indexOf(itm.id);
-        var el3 = document.getElementById('csel-'+itm.id);
-        if (idx3 !== -1) {
-          comboSelected.splice(idx3, 1);
-          if (el3) el3.style.borderColor = 'var(--cream-dark)';
-        } else {
-          comboSelected.push(itm.id);
-          if (el3) el3.style.borderColor = 'var(--brown-warm)';
-        }
-        // Update preview
-        if (!comboSelected.length) {
-          selPreview.innerHTML = '<span style="font-size:10px;color:var(--muted);font-style:italic;">Tik items aan hieronder...</span>';
-        } else {
-          selPreview.innerHTML = comboSelected.map(function(sid){
-            var nm=getItemName(sid);
-            var sph=photos[sid]?'<img src="'+photos[sid]+'" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:7px;color:var(--muted);">'+nm.split(' ')[0]+'</span>';
-            return '<div style="flex-shrink:0;width:44px;height:54px;border-radius:6px;overflow:hidden;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;">'+sph+'</div>';
-          }).join('');
-        }
-        // Update button text
-        comboGenBtn.textContent = comboSelected.length
-          ? '\u2756 Stylist maakt combo (' + comboSelected.length + ' item' + (comboSelected.length>1?'s':'') + ')'
-          : '\u2756 Verrassing — stylist kiest alles';
-      };
-    })(e3.item));
-    comboGrid.appendChild(d3);
-  });
   comboSection.appendChild(comboGrid);
 
+  // + Extra item knop
+  var addExtraBtn = document.createElement('button');
+  addExtraBtn.style.cssText = 'width:100%;padding:10px;background:var(--white);color:var(--brown);border:1.5px dashed var(--brown-warm);border-radius:10px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:10px;';
+  addExtraBtn.textContent = '+ Extra item toevoegen uit garderobe';
+  addExtraBtn.addEventListener('click', function(){
+    // Open picker from full wardrobe
+    openExtraItemPicker(function(item) {
+      extraItems[item.id] = item;
+      activeCapsule.add(item.id);
+      updateComboBtn();
+      refreshComboGrid();
+    });
+  });
+  comboSection.appendChild(addExtraBtn);
+
   var comboGenBtn = document.createElement('button');
+  comboGenBtn.id = 'combo-gen-btn';
   comboGenBtn.style.cssText = 'width:100%;padding:12px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:8px;';
-  comboGenBtn.textContent = '\u2756 Verrassing \u2014 stylist kiest alles';
+  comboGenBtn.textContent = '\u2756 Maak combos met deze items';
   comboGenBtn.addEventListener('click', function(){
     overlay.remove();
-    // Use builder with preselected items
-    _builderItems = comboSelected.slice();
+    var allIds = Array.from(activeCapsule);
+    // Capsule = active items + extra items
+    var capSet = new Set(allIds);
+    _builderCapsuleIds = capSet;
+    _builderItems = []; // stylist chooses freely within capsule
     generateFromBuilder();
   });
   comboSection.appendChild(comboGenBtn);
   sheet.appendChild(comboSection);
+
+  refreshComboGrid();
+  updateComboBtn();
 
   var closeBtn2 = document.createElement('button');
   closeBtn2.style.cssText = 'width:100%;padding:11px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:12px;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-top:8px;';
@@ -9693,6 +9738,55 @@ function setSugTemp(val, btn) {
   });
   shownComboKeys.clear();
   generateSuggestions(false);
+}
+
+// ============ EXTRA ITEM PICKER (for capsule) ============
+function openExtraItemPicker(onSelect) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.7);z-index:800;display:flex;align-items:flex-end;';
+  var sh = document.createElement('div');
+  sh.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding:20px 16px 50px;';
+  sh.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:300;color:var(--brown);margin-bottom:8px;">+ Extra item</div>'
+    + '<p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Kies een item uit je volledige garderobe om toe te voegen aan de what-if selectie.</p>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="extra-item-grid"></div>';
+  setTimeout(function(){
+    var grid = document.getElementById('extra-item-grid');
+    if (!grid) return;
+    var allIt = getAllItems().filter(function(i){return !deletedItemIds.has(i.id);});
+    var catOrder2 = ['tops','bottoms','jurken','layers','shoes','bags'];
+    var catL2 = {tops:'Tops',bottoms:'Rokken & Broeken',jurken:'Jurken',layers:'Laagjes',shoes:'Schoenen',bags:'Tassen'};
+    var lastCat2 = null;
+    allIt.sort(function(a,b){return (catOrder2.indexOf(a.cat)||9)-(catOrder2.indexOf(b.cat)||9);});
+    allIt.forEach(function(item){
+      if (item.cat !== lastCat2) {
+        lastCat2 = item.cat;
+        var lbl2 = document.createElement('div');
+        lbl2.style.cssText = 'grid-column:1/-1;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-top:8px;margin-bottom:2px;';
+        lbl2.textContent = catL2[item.cat]||item.cat;
+        grid.appendChild(lbl2);
+      }
+      var d5 = document.createElement('div');
+      d5.style.cssText = 'border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid var(--cream-dark);';
+      var ph5 = photos[item.id]?'<img src="'+photos[item.id]+'" style="width:100%;height:100%;object-fit:cover;">'
+        :'<div style="aspect-ratio:1;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:var(--muted);padding:2px;text-align:center;">'+item.name.split(' ')[0]+'</span></div>';
+      d5.innerHTML = '<div style="aspect-ratio:1;background:var(--cream-dark);">'+ph5+'</div>'
+        +'<div style="font-size:7px;color:var(--brown);text-align:center;padding:3px;">'+(item.name.length>13?item.name.substring(0,12)+'\u2026':item.name)+'</div>';
+      d5.addEventListener('click', (function(it5){ return function(){
+        ov.remove();
+        onSelect(it5);
+      }; })(item));
+      grid.appendChild(d5);
+    });
+  }, 30);
+  var cb6 = document.createElement('button');
+  cb6.style.cssText = 'width:100%;padding:10px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-top:10px;';
+  cb6.textContent = 'Annuleren';
+  cb6.addEventListener('click', function(){ ov.remove(); });
+  sh.appendChild(cb6);
+  ov.appendChild(sh);
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 // ============ COPY OUTFIT TO BOARD ============
