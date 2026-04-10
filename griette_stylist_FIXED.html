@@ -9171,7 +9171,6 @@ function showYesterdayQuickLog() {
 function refreshBoardHeader(boardId) {
   var board = boards.find(function(b){ return b.id===boardId; });
   if (!board) return;
-  // Recalculate capsule
   var capsuleIds3 = new Set();
   var capCounts3 = {};
   (board.outfits||[]).forEach(function(o){
@@ -9185,13 +9184,23 @@ function refreshBoardHeader(boardId) {
   if(capCounts3.bottoms)capParts3.push(capCounts3.bottoms+'B');
   if(capCounts3.jurken)capParts3.push(capCounts3.jurken+'J');
   if(capCounts3.shoes)capParts3.push(capCounts3.shoes+'S');
-  var kofHint3=capsuleIds3.size<=7?'handbagage':capsuleIds3.size<=15?'1 koffer':'2 koffers';
-  // Find the capsule el in board header
+  var kofTxt = capsuleIds3.size<=7?' \u00b7 handbagage':capsuleIds3.size<=15?' \u00b7 1 koffer':' \u00b7 2 koffers';
+  var newTxt = capsuleIds3.size+' items \u00b7 '+capParts3.join(' \u00b7 ')+kofTxt;
   var boardDiv = document.getElementById('board-'+boardId);
   if (!boardDiv) return;
   var capEl2 = boardDiv.querySelector('.capsule-teller');
   if (capEl2) {
-    capEl2.textContent = capsuleIds3.size+' items \u00b7 '+capParts3.join(' \u00b7 ')+(capsuleIds3.size<=7?' \u00b7 handbagage':capsuleIds3.size<=15?' \u00b7 1 koffer':' \u00b7 2 koffers');
+    capEl2.textContent = newTxt;
+  } else if (capsuleIds3.size > 0) {
+    // Create it if missing
+    var titleDiv2 = boardDiv.querySelector('[style*="Cormorant"]');
+    if (titleDiv2) {
+      var newCap = document.createElement('div');
+      newCap.className = 'capsule-teller';
+      newCap.style.cssText = 'font-size:9px;color:var(--muted);margin-top:2px;';
+      newCap.textContent = newTxt;
+      titleDiv2.parentElement.appendChild(newCap);
+    }
   }
 }
 
