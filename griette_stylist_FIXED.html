@@ -1813,7 +1813,11 @@ function buildBoards() {
     capsuleBtn.style.cssText = 'padding:8px 10px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:20px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);white-space:nowrap;';
     capsuleBtn.textContent = '\uD83D\uDCCB Overzicht';
     capsuleBtn.title = 'Alle items + statistieken';
-    capsuleBtn.addEventListener('click', (function(bid){ return function(){ showCapsuleOverzicht(bid); }; })(b.id));
+    capsuleBtn.addEventListener('click', (function(bid){ return function(){
+      var ex = document.getElementById('capsule-overlay');
+      if (ex) { ex.remove(); return; }
+      showCapsuleOverzicht(bid);
+    }; })(b.id));
 
     var btnGroup = document.createElement('div');
     btnGroup.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
@@ -9447,6 +9451,9 @@ function openSwapPicker(evtOrBtn) {
 
 // ============ CAPSULE OVERZICHT PER BOARD ============
 function showCapsuleOverzicht(boardId) {
+  // Always remove existing overlay first to get fresh data
+  var existing = document.getElementById('capsule-overlay');
+  if (existing) existing.remove();
   var board = boards.find(function(b){ return b.id===boardId; });
   if (!board) return;
 
