@@ -1726,6 +1726,7 @@ function buildBoards() {
       if(capCounts.shoes)capParts.push(capCounts.shoes+'S');
       var kofHint = capsuleIds2.size<=7?'\u1f9f3':capsuleIds2.size<=15?'1 koffer':'2 koffers';
       var capEl=document.createElement('div');
+      capEl.className='capsule-teller';
       capEl.style.cssText='font-size:9px;color:var(--muted);margin-top:2px;';
       capEl.textContent=capsuleIds2.size+' items \u00b7 '+capParts.join(' \u00b7 ')+(capsuleIds2.size<=7?' \u00b7 handbagage':capsuleIds2.size<=15?' \u00b7 1 koffer':' \u00b7 2 koffers');
       titleDiv.appendChild(capEl);
@@ -2001,14 +2002,15 @@ function renderOutfit(boardId, outfit) {
 
 
 function addItemToOutfit(outfitId, itemId) {
-  // find outfit
   for (const board of boards) {
     const outfit = board.outfits.find(o => o.id === outfitId);
     if (outfit) {
       if (!outfit.items.includes(itemId)) outfit.items.push(itemId);
       addItemToOutfitDOM(outfitId, itemId);
       refreshDropZone(outfitId);
-      showToast('Toegevoegd aan outfit ✓');
+      saveAppData();
+      refreshBoardHeader(board.id);
+      showToast('Toegevoegd aan outfit \u2713');
       return;
     }
   }
@@ -2030,7 +2032,7 @@ function addItemToOutfitDOM(outfitId, itemId) {
   const name = getItemName(itemId);
   const shortName = name.length > 18 ? name.substring(0,17)+'…' : name;
 
-  var swapBtn = `<button class="swap-slot" onclick="openSwapPicker(this)" title="Wissel item">⇄</button>`;
+  var swapBtn = `<button class="swap-slot" onclick="openSwapPicker(event)" title="Wissel item">⇄</button>`;
   if (photos[itemId]) {
     slot.innerHTML = `<img src="${photos[itemId]}" alt=""><div class="slot-label">${shortName}</div><button class="remove-slot" onclick="removeSlot(this)">×</button>${swapBtn}`;
   } else {
@@ -2065,12 +2067,14 @@ function removeSlot(btn) {
   const slot = btn.parentElement;
   const outfitId = slot.dataset.outfitId;
   const itemId = slot.dataset.itemId;
-  // remove from data
+  var boardId2 = null;
   for (const board of boards) {
     const outfit = board.outfits.find(o => o.id === outfitId);
-    if (outfit) outfit.items = outfit.items.filter(i => i !== itemId);
+    if (outfit) { outfit.items = outfit.items.filter(i => i !== itemId); boardId2 = board.id; }
   }
   slot.remove();
+  saveAppData();
+  if (boardId2) refreshBoardHeader(boardId2);
   showToast('Item verwijderd');
 }
 
@@ -2094,6 +2098,8 @@ function deleteOutfit(boardId, outfitId) {
   const el = document.getElementById('ob-' + outfitId);
   if (el) el.remove();
   saveAppData();
+  // Update capsule teller in board header
+  refreshBoardHeader(boardId);
 }
 
 // ============ PICKER MODAL ============
@@ -9472,10 +9478,41 @@ function openYesterdayLog() {
   document.body.appendChild(overlay);
 }
 
+// ============ BOARD HEADER REFRESH ============
+function refreshBoardHeader(boardId) {
+  var board = boards.find(function(b){ return b.id===boardId; });
+  if (!board) return;
+  // Recalculate capsule
+  var capsuleIds3 = new Set();
+  var capCounts3 = {};
+  (board.outfits||[]).forEach(function(o){
+    (o.items||[]).forEach(function(id){
+      if(capsuleIds3.has(id))return; capsuleIds3.add(id);
+      var it=getAllItems().find(function(i){return i.id===id;}); if(it)capCounts3[it.cat]=(capCounts3[it.cat]||0)+1;
+    });
+  });
+  var capParts3=[];
+  if(capCounts3.tops)capParts3.push(capCounts3.tops+'T');
+  if(capCounts3.bottoms)capParts3.push(capCounts3.bottoms+'B');
+  if(capCounts3.jurken)capParts3.push(capCounts3.jurken+'J');
+  if(capCounts3.shoes)capParts3.push(capCounts3.shoes+'S');
+  var kofHint3=capsuleIds3.size<=7?'handbagage':capsuleIds3.size<=15?'1 koffer':'2 koffers';
+  // Find the capsule el in board header
+  var boardDiv = document.getElementById('board-'+boardId);
+  if (!boardDiv) return;
+  var capEl2 = boardDiv.querySelector('.capsule-teller');
+  if (capEl2) {
+    capEl2.textContent = capsuleIds3.size+' items \u00b7 '+capParts3.join(' \u00b7 ')+(capsuleIds3.size<=7?' \u00b7 handbagage':capsuleIds3.size<=15?' \u00b7 1 koffer':' \u00b7 2 koffers');
+  }
+}
+
 // ============ ITEM SWAP IN OUTFIT ============
-function openSwapPicker(btn) {
-  var slot = btn.closest('.outfit-slot');
+function openSwapPicker(evtOrBtn) {
+  var btn = (evtOrBtn instanceof Event) ? evtOrBtn.target : evtOrBtn;
+  if (btn && !btn.classList.contains('swap-slot')) btn = btn.closest('.swap-slot');
+  var slot = btn ? btn.closest('.outfit-slot') : null;
   if (!slot) return;
+  if (evtOrBtn instanceof Event) evtOrBtn.stopPropagation();
   var outfitId = slot.dataset.outfitId;
   var currentId = slot.dataset.itemId;
   var currentItem = getAllItems().find(function(i){ return i.id===currentId; });
@@ -9523,6 +9560,9 @@ function openSwapPicker(btn) {
           }
           overlay.remove();
           showToast('\u21c4 Gewisseld naar ' + altItem.name);
+          // Refresh capsule if open
+          var capOv = document.querySelector('[id^="capsule-"]');
+          if (capOv) showCapsuleOverzicht(b2.id);
         };
       })(alt));
       grid.appendChild(d);
