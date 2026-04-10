@@ -2063,6 +2063,8 @@ function addItemToOutfit(outfitId, itemId) {
       refreshDropZone(outfitId);
       saveAppData();
       refreshBoardHeader(board.id);
+      var capOv3 = document.getElementById('capsule-overlay');
+      if (capOv3) { var _bid2=board.id; capOv3.remove(); setTimeout(function(){showCapsuleOverzicht(_bid2);},100); }
       showToast('Toegevoegd aan outfit \u2713');
       return;
     }
@@ -2128,6 +2130,9 @@ function removeSlot(btn) {
   slot.remove();
   saveAppData();
   if (boardId2) refreshBoardHeader(boardId2);
+  // Close capsule overlay so it reopens with fresh data
+  var capOv2 = document.getElementById('capsule-overlay');
+  if (capOv2) { var _bid = boardId2; capOv2.remove(); setTimeout(function(){ showCapsuleOverzicht(_bid); },100); }
   showToast('Item verwijderd');
 }
 
