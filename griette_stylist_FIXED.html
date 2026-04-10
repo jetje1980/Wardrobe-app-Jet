@@ -347,12 +347,6 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
   <button type="button" onclick="closeMeerSheet();openCyclusTracker();" style="width:100%;padding:14px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--brown);">
     🧡 Cyclus — dag bijhouden & outfit aanpassen
   </button>
-  <button type="button" onclick="closeMeerSheet();openWellbeingLog();" style="width:100%;padding:14px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--brown);">
-    💪 Daglog — gewicht, mood & activiteit
-  </button>
-  <button type="button" onclick="closeMeerSheet();openGarminImport();" style="width:100%;padding:14px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--brown);">
-    📈 Garmin import — lees activiteiten in
-  </button>
   <button type="button" onclick="closeMeerSheet();publishToGitHub();" style="width:100%;padding:14px;background:var(--brown);color:var(--cream);border:none;border-radius:14px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
     🚀 Publiceer update — sla app op naar GitHub
   </button>
@@ -6214,6 +6208,21 @@ function showDayDetail(dateStr, dayNum) {
     content += '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Gepland</div>'
       + '<div style="font-size:11px;color:var(--brown);margin-bottom:14px;">' + planned.outfitName + '</div>';
   }
+  // Wellbeing data for this day
+  var wb = wellbeingLog[dateStr];
+  if (wb && (wb.mood || (wb.activity && wb.activity.length) || wb.steps || wb.weight)) {
+    content += '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Dag info</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">';
+    if (wb.mood) content += '<span style="padding:4px 10px;border-radius:16px;font-size:10px;background:var(--white);border:1.5px solid var(--cream-dark);color:var(--brown);">' + wb.mood + '</span>';
+    if (wb.activity) wb.activity.forEach(function(a){ content += '<span style="padding:4px 10px;border-radius:16px;font-size:10px;background:var(--white);border:1.5px solid var(--cream-dark);color:var(--brown);">' + a + '</span>'; });
+    if (wb.steps) content += '<span style="padding:4px 10px;border-radius:16px;font-size:10px;background:var(--white);border:1.5px solid var(--cream-dark);color:var(--brown);">\uD83D\uDEB6 ' + wb.steps.toLocaleString('nl') + ' stappen</span>';
+    if (wb.weight) content += '<span style="padding:4px 10px;border-radius:16px;font-size:10px;background:var(--white);border:1.5px solid var(--cream-dark);color:var(--brown);">' + wb.weight + ' kg</span>';
+    content += '</div>';
+  }
+  // Quick mood/activity log button
+  content += '<button onclick="openWellbeingForDate(\'' + dateStr + '\')" '
+    + 'style="width:100%;padding:10px;background:var(--white);border:1.5px solid var(--cream-dark);border-radius:10px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);margin-bottom:8px;">'
+    + '\uD83D\uDCAA ' + (wb && wb.mood ? 'Daginfo aanpassen' : 'Mood & activiteit loggen') + '</button>';
 
   sheet.innerHTML = content;
 
@@ -8532,9 +8541,9 @@ function openWellbeingLog() {
   saveBtn.textContent = '\u2756 Opslaan';
   saveBtn.addEventListener('click', function() {
     var entry = {};
-    var moodActive = document.querySelector('#wb-mood button[style*="var(--cream)"]');
+    var moodActive = document.querySelector('#wb-mood button.wb-active');
     if (moodActive) entry.mood = moodActive.dataset.val;
-    entry.activity = Array.from(document.querySelectorAll('#wb-activity button')).filter(function(b){ return b.style.background==='var(--brown)'; }).map(function(b){ return b.dataset.val; });
+    entry.activity = Array.from(document.querySelectorAll('#wb-activity button.wb-active')).map(function(b){ return b.dataset.val; });
     var steps = document.getElementById('wb-steps'); if(steps&&steps.value) entry.steps = parseInt(steps.value);
     var weight = document.getElementById('wb-weight'); if(weight&&weight.value) entry.weight = parseFloat(weight.value);
     var notes = document.getElementById('wb-notes'); if(notes&&notes.value.trim()) entry.notes = notes.value.trim();
@@ -8552,9 +8561,9 @@ function openWellbeingLog() {
   adviesBtn.addEventListener('click', function() {
     // Save first
     var entry2 = {};
-    var mAct = document.querySelector('#wb-mood button[style*="var(--cream)"]');
+    var mAct = document.querySelector('#wb-mood button.wb-active');
     if(mAct) entry2.mood = mAct.dataset.val;
-    entry2.activity = Array.from(document.querySelectorAll('#wb-activity button')).filter(function(b){return b.style.background==='var(--brown)';}).map(function(b){return b.dataset.val;});
+    entry2.activity = Array.from(document.querySelectorAll('#wb-activity button.wb-active')).map(function(b){ return b.dataset.val; });
     var w2=document.getElementById('wb-weight');if(w2&&w2.value)entry2.weight=parseFloat(w2.value);
     entry2.date = today; wellbeingLog[today] = entry2; saveWellbeing();
     overlay.remove();
@@ -8577,15 +8586,18 @@ function openWellbeingLog() {
 function wbSelect(btn, group) {
   document.querySelectorAll('#wb-' + group + ' button').forEach(function(b){
     b.style.background='var(--white)'; b.style.color='var(--brown)'; b.style.borderColor='var(--cream-dark)';
+    b.classList.remove('wb-active');
   });
   btn.style.background='var(--brown)'; btn.style.color='var(--cream)'; btn.style.borderColor='var(--brown)';
+  btn.classList.add('wb-active');
 }
 
 function wbToggle(btn, group) {
-  var sel = btn.style.background === 'var(--brown)';
+  var sel = btn.classList.contains('wb-active');
   btn.style.background = sel?'var(--white)':'var(--brown)';
   btn.style.color = sel?'var(--brown)':'var(--cream)';
   btn.style.borderColor = sel?'var(--cream-dark)':'var(--brown)';
+  btn.classList.toggle('wb-active', !sel);
 }
 
 async function getWellbeingOutfitAdvies(entry, cyclusDay, fase) {
@@ -9075,6 +9087,48 @@ function renderInzichten() {
       + '<p style="font-size:11px;line-height:1.6;">Log een paar outfits en jouw cyclus + mood. Dan zie je hier welke items je het meest draagt, wat je aantrekt bij bepaalde fases en hoe je je dan voelt.</p>';
     cont.appendChild(emptyEl);
   }
+}
+
+function openWellbeingForDate(dateStr) {
+  // Show wellbeing log pre-filled with data for dateStr
+  var saved = wellbeingLog[dateStr] || {};
+  var ex = document.getElementById('wellbeing-overlay'); if(ex) ex.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'wellbeing-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:700;display:flex;align-items:flex-end;';
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--cream);border-radius:20px 20px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding:20px 16px 50px;';
+  var dLabel = new Date(dateStr).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+  var moodOpties2 = [['\uD83D\uDE0A Blij','blij'],['\u26A1 Energiek','energiek'],['\uD83E\uDD29 Zelfverzekerd','zelfverzekerd'],['\uD83D\uDE10 Neutraal','neutraal'],['\uD83D\uDE34 Moe','moe'],['\uD83E\uDD75 Prikkelbaar','prikkelbaar'],['\uD83D\uDE22 Gevoelig','gevoelig'],['\uD83D\uDCAA Krachtig','krachtig']];
+  var actOpties2 = [['\uD83D\uDEB6 Wandeling','wandeling'],['\uD83C\uDFC3 Hardlopen','hardlopen'],['\uD83D\uDEB4 Fietsen','fietsen'],['\uD83C\uDFCB Sporten','sporten'],['\uD83E\uDDD8 Yoga','yoga'],['\uD83D\uDEC0 Rust','rust'],['\uD83D\uDCBC Werkdag','werkdag']];
+  sheet.innerHTML = '<div style="width:36px;height:4px;background:var(--cream-dark);border-radius:2px;margin:0 auto 14px;"></div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:300;color:var(--brown);margin-bottom:12px;">' + dLabel + '</div>'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Mood</div>'
+    + '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="wb-mood">'
+    + moodOpties2.map(function(m){ var sel=saved.mood===m[1]; return '<button type="button" onclick="wbSelect(this,\'mood\')" data-val="'+m[1]+'" class="'+(sel?'wb-active':'')+'" style="padding:7px 12px;border-radius:20px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;border:1.5px solid '+(sel?'var(--brown)':'var(--cream-dark)')+';background:'+(sel?'var(--brown)':'var(--white)')+';color:'+(sel?'var(--cream)':'var(--brown)')+';">'+m[0]+'</button>'; }).join('')
+    + '</div>'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Activiteit</div>'
+    + '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="wb-activity">'
+    + actOpties2.map(function(a){ var sel=(saved.activity||[]).includes(a[1]); return '<button type="button" onclick="wbToggle(this,\'activity\')" data-val="'+a[1]+'" class="'+(sel?'wb-active':'')+'" style="padding:7px 12px;border-radius:20px;font-size:10px;font-family:Jost,sans-serif;cursor:pointer;border:1.5px solid '+(sel?'var(--brown)':'var(--cream-dark)')+';background:'+(sel?'var(--brown)':'var(--white)')+';color:'+(sel?'var(--cream)':'var(--brown)')+';">'+a[0]+'</button>'; }).join('')
+    + '</div>'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:6px;">Stappen</div>'
+    + '<input id="wb-steps" type="number" placeholder="bijv. 8500" value="'+(saved.steps||'')+'" style="width:100%;padding:10px 12px;border:1.5px solid var(--cream-dark);border-radius:10px;font-size:14px;font-family:Jost,sans-serif;background:var(--white);margin-bottom:14px;box-sizing:border-box;">';
+  var saveBtn5 = document.createElement('button');
+  saveBtn5.style.cssText = 'width:100%;padding:13px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:8px;';
+  saveBtn5.textContent = '\u2756 Opslaan';
+  saveBtn5.addEventListener('click', function(){
+    var entry5 = {date:dateStr};
+    var mA = document.querySelector('#wb-mood button.wb-active'); if(mA) entry5.mood=mA.dataset.val;
+    entry5.activity = Array.from(document.querySelectorAll('#wb-activity button.wb-active')).map(function(b){return b.dataset.val;});
+    var st=document.getElementById('wb-steps'); if(st&&st.value) entry5.steps=parseInt(st.value);
+    wellbeingLog[dateStr]=entry5; saveWellbeing();
+    overlay.remove(); showToast('\u2756 Opgeslagen voor '+dLabel);
+  });
+  var cb5=document.createElement('button'); cb5.style.cssText='width:100%;padding:10px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);'; cb5.textContent='Sluiten'; cb5.addEventListener('click',function(){overlay.remove();});
+  sheet.appendChild(saveBtn5); sheet.appendChild(cb5);
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
 }
 
 // ============ COPY OUTFIT TO BOARD ============
