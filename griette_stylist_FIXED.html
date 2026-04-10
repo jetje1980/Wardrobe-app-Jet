@@ -451,7 +451,12 @@ footer{text-align:center;padding:16px;font-size:9px;color:var(--muted);letter-sp
       <button onclick="generateSuggestions(false)" style="display:flex;align-items:center;gap:5px;padding:8px 14px;background:var(--brown);color:var(--cream);border:none;border-radius:20px;font-size:10px;font-family:'Jost',sans-serif;cursor:pointer;letter-spacing:1px;">❖ Genereer</button>
     </div>
   </div>
-  <div id="weather-sug-badge" style="margin-bottom:12px;display:none;"></div>
+  <div id="weather-sug-badge" style="margin-bottom:8px;display:none;"></div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;" id="sug-temp-row">
+    <button onclick="setSugTemp('warm',this)" data-sugtemp="warm" class="sug-temp-btn" style="padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);">&#9728;&#65039; Warm</button>
+    <button onclick="setSugTemp('mild',this)" data-sugtemp="mild" class="sug-temp-btn" style="padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);">&#127780; Mild</button>
+    <button onclick="setSugTemp('koel',this)" data-sugtemp="koel" class="sug-temp-btn" style="padding:6px 12px;border-radius:16px;border:1.5px solid var(--cream-dark);background:var(--white);font-size:10px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);">&#9729;&#65039; Koel</button>
+  </div>
 
   <!-- Basis voorkeur: bottom + schoen -->
   <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
@@ -1735,6 +1740,13 @@ function buildBoards() {
     chip.addEventListener('click', function() { switchBoard(b.id); });
     sel.appendChild(chip);
   });
+  // + Nieuw board knop
+  var addChip = document.createElement('button');
+  addChip.className = 'board-chip';
+  addChip.style.cssText += ';border-style:dashed;';
+  addChip.textContent = '+ Nieuw board';
+  addChip.addEventListener('click', openNewBoardDialog);
+  sel.appendChild(addChip);
 
   // Build board contents
   var cont = document.getElementById('boards-container');
@@ -1821,9 +1833,22 @@ function buildBoards() {
 
     var btnGroup = document.createElement('div');
     btnGroup.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
+    var delBoardBtn = document.createElement('button');
+    delBoardBtn.style.cssText = 'padding:8px 10px;background:transparent;border:1.5px solid var(--cream-dark);border-radius:20px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);';
+    delBoardBtn.textContent = '\uD83D\uDDD1';
+    delBoardBtn.title = 'Board verwijderen';
+    delBoardBtn.addEventListener('click', (function(bid, blabel){ return function(){
+      if (confirm('Board \"' + blabel + '\" verwijderen? Alle outfits gaan verloren.')) {
+        boards = boards.filter(function(x){ return x.id !== bid; });
+        activeBoardId = boards.length ? boards[0].id : null;
+        saveAppData(); buildBoards();
+        showToast('Board verwijderd');
+      }
+    }; })(b.id, b.label));
     btnGroup.appendChild(genBtn);
     btnGroup.appendChild(fromItemBtn);
     btnGroup.appendChild(capsuleBtn);
+    btnGroup.appendChild(delBoardBtn);
     btnGroup.appendChild(addBtn);
 
     hdr.appendChild(titleDiv);
@@ -1832,12 +1857,6 @@ function buildBoards() {
 
     // Paklijst button (only for boards with outfits)
     if (b.outfits && b.outfits.length > 0) {
-      var pakBtn = document.createElement('button');
-      pakBtn.type = 'button';
-      pakBtn.setAttribute('data-paklijst', b.id);
-      pakBtn.style.cssText = 'width:100%;padding:14px;margin-bottom:14px;background:var(--cream);border:2px solid var(--brown-warm);border-radius:12px;font-size:12px;font-family:Jost,sans-serif;color:var(--brown-warm);text-align:center;letter-spacing:1px;display:block;-webkit-appearance:none;box-sizing:border-box;';
-      pakBtn.textContent = '\uD83D\uDCCB Genereer paklijst voor ' + b.label;
-      div.appendChild(pakBtn);
     }
 
     // Outfits container
@@ -4145,6 +4164,7 @@ function generateSuggestions(append = false) {
   }
 
   setTimeout(async () => {
+    try {
     const allItems = getAllItems();
 
     // Remove loading indicator if appending
@@ -4450,6 +4470,7 @@ function generateSuggestions(append = false) {
     });
 
     if (moreBtn) { moreBtn.style.display='flex'; moreBtn.classList.remove('loading'); moreBtn.textContent='+ Meer outfits genereren'; }
+    } catch(e) { console.error("generateSuggestions error:", e); if (results) results.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:11px;">Kon geen outfits laden. Probeer opnieuw.</div>'; }
   }, append ? 100 : 200);
 }
 function selectOccasion(id, btn) {
@@ -7963,7 +7984,9 @@ function showPatternInsights() {
 var cyclusData = { startDate: null, lengthDays: 28, history: [], avgLength: 28 };
 
 function loadCyclus() {
-  try { var s = localStorage.getItem('griette-cyclus-v1'); if(s) cyclusData = JSON.parse(s); } catch(e) {}
+  try { var s = localStorage.getItem('griette-cyclus-v1'); if(s) { var p=JSON.parse(s); if(p&&p.startDate) cyclusData=p; } } catch(e) {}
+  // Also try Supabase
+  supabaseGet('cyclus').then(function(d){ if(d&&d.startDate){ cyclusData=d; } }).catch(function(){});
 }
 
 function saveCyclus() {
@@ -9036,8 +9059,14 @@ function renderInzichten() {
     emptyEl.style.cssText = 'text-align:center;padding:40px 20px;color:var(--muted);';
     emptyEl.innerHTML = '<div style="font-size:40px;margin-bottom:12px;">🧠</div>'
       + '<div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--brown);margin-bottom:8px;">Nog geen patronen</div>'
-      + '<p style="font-size:11px;line-height:1.6;">Log een paar outfits en jouw cyclus + mood. Dan zie je hier welke items je het meest draagt, wat je aantrekt bij bepaalde fases en hoe je je dan voelt.</p>';
+      + '<p style="font-size:11px;line-height:1.6;">Log een paar outfits via de dagkaart. Dan zie je hier welke items je het meest draagt.</p>';
     cont.appendChild(emptyEl);
+  } else if (Object.keys(itemCounts).length === 0) {
+    var emptyEl2 = document.createElement('div');
+    emptyEl2.style.cssText = 'text-align:center;padding:30px 20px;color:var(--muted);';
+    emptyEl2.innerHTML = '<div style="font-size:32px;margin-bottom:10px;">👗</div>'
+      + '<p style="font-size:11px;line-height:1.6;">Geen outfits gelogd. Tik op de dagkaart en log wat je draagt!</p>';
+    cont.appendChild(emptyEl2);
   }
 }
 
@@ -9535,6 +9564,65 @@ function showCapsuleOverzicht(boardId) {
   overlay.appendChild(sheet);
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+}
+
+// ============ BOARD MANAGEMENT ============
+function openNewBoardDialog() {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(46,26,14,0.6);z-index:700;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--cream);border-radius:20px;padding:24px;width:100%;max-width:340px;';
+  var emojis = ['✈️','🌊','💼','✨','🌹','🗼','☀️','🎉','🌿','❄️','🏖️','🎭'];
+  var selectedEmoji = '✨';
+  box.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--brown);margin-bottom:16px;">Nieuw board</div>'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Naam</div>'
+    + '<input id="new-board-name" type="text" placeholder="bijv. Parijs weekend" style="width:100%;padding:10px 12px;border:1.5px solid var(--cream-dark);border-radius:10px;font-size:14px;font-family:Jost,sans-serif;background:var(--white);margin-bottom:14px;box-sizing:border-box;">'
+    + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--brown-warm);margin-bottom:8px;">Emoji</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;" id="emoji-picker">'
+    + emojis.map(function(e){ return '<button type="button" onclick="selectBoardEmoji(this)" data-emoji="'+e+'" style="padding:6px 8px;border-radius:8px;font-size:18px;cursor:pointer;border:1.5px solid var(--cream-dark);background:var(--white);">'+e+'</button>'; }).join('')
+    + '</div>';
+  var saveBtn = document.createElement('button');
+  saveBtn.style.cssText = 'width:100%;padding:12px;background:var(--brown);color:var(--cream);border:none;border-radius:12px;font-size:12px;font-family:Jost,sans-serif;cursor:pointer;margin-bottom:8px;';
+  saveBtn.textContent = '+ Aanmaken';
+  saveBtn.addEventListener('click', function(){
+    var name = document.getElementById('new-board-name').value.trim();
+    if (!name) { showToast('Geef het board een naam'); return; }
+    var emoji = document.querySelector('#emoji-picker button[style*="var(--brown)"]')?.dataset.emoji || '✨';
+    var newId = 'board-' + Date.now();
+    boards.push({ id: newId, label: name, emoji: emoji, outfits: [] });
+    saveAppData();
+    activeBoardId = newId;
+    buildBoards();
+    overlay.remove();
+    showToast('Board aangemaakt!');
+  });
+  var cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'width:100%;padding:10px;background:transparent;border:none;font-size:11px;font-family:Jost,sans-serif;cursor:pointer;color:var(--muted);';
+  cancelBtn.textContent = 'Annuleren';
+  cancelBtn.addEventListener('click', function(){ overlay.remove(); });
+  box.appendChild(saveBtn); box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function selectBoardEmoji(btn) {
+  document.querySelectorAll('#emoji-picker button').forEach(function(b){
+    b.style.background='var(--white)'; b.style.borderColor='var(--cream-dark)';
+  });
+  btn.style.background='var(--brown)'; btn.style.borderColor='var(--brown)';
+}
+
+function setSugTemp(val, btn) {
+  weatherTemp = val;
+  document.querySelectorAll('.sug-temp-btn').forEach(function(b){
+    var isThis = b.dataset.sugtemp === val;
+    b.style.background = isThis ? 'var(--brown)' : 'var(--white)';
+    b.style.color = isThis ? 'var(--cream)' : 'var(--muted)';
+    b.style.borderColor = isThis ? 'var(--brown)' : 'var(--cream-dark)';
+  });
+  shownComboKeys.clear();
+  generateSuggestions(false);
 }
 
 // ============ COPY OUTFIT TO BOARD ============
