@@ -6598,17 +6598,25 @@ async function generateBoardOutfitsWithCounts(boardId, counts, extra) {
   overlay.appendChild(sheet);
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
-  var allItems = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+  var allItemsFull = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id); });
+  // If board already has items in outfits, use those as capsule
+  var capsuleIds4 = new Set();
+  (board.outfits||[]).forEach(function(o){ (o.items||[]).forEach(function(id){capsuleIds4.add(id);}); });
+  var allItems = capsuleIds4.size > 0
+    ? allItemsFull.filter(function(i){ return capsuleIds4.has(i.id); })
+    : allItemsFull;
+  var usingCapsule = capsuleIds4.size > 0;
   var byCategory = {};
   allItems.forEach(function(i){
     if (!byCategory[i.cat]) byCategory[i.cat] = [];
     var k = getTag(i.id,'kleur')||''; var s2 = getStructuurKlasse(i.id)||'';
     byCategory[i.cat].push(i.name + (k?' ['+k+']':'') + (s2?' ['+s2+']':''));
   });
-  var wardrobeText = Object.entries(byCategory).map(function(e){
-    var labels = {tops:'TOPS',bottoms:'ROKKEN & BROEKEN',layers:'LAAGJES',jurken:'JURKEN',shoes:'SCHOENEN',bags:'TASSEN'};
-    return (labels[e[0]]||e[0].toUpperCase()) + ': ' + e[1].join(', ');
-  }).join('\n');
+  var wardrobeText = (usingCapsule ? 'CAPSULE ITEMS (alleen deze gebruiken):\n' : 'GARDEROBE:\n')
+    + Object.entries(byCategory).map(function(e){
+      var labels = {tops:'TOPS',bottoms:'ROKKEN & BROEKEN',layers:'LAAGJES',jurken:'JURKEN',shoes:'SCHOENEN',bags:'TASSEN'};
+      return (labels[e[0]]||e[0].toUpperCase()) + ': ' + e[1].join(', ');
+    }).join('\n');
   var totalOutfits = Math.max(counts.tops, counts.bottoms + (counts.jurken||0));
   var prompt = 'Je bent Griette\'s stylist. DNA: klassiek casual, krachtig, kleurrijk, vrouwelijk. Taille benadrukken, nooit wijd+wijd, soepel+stevig = beste combo.\n\n'
     + 'TRIP: ' + board.label + ' | ' + days + ' dagen | ' + klimaat
@@ -7026,6 +7034,10 @@ async function generateBoardOutfits(boardId) {
 function openItemAnchorPicker(boardId) {
   var board = boards.find(function(b){ return b.id === boardId; });
   if (!board) return;
+  // Set capsule restriction for anchor-based generation
+  var capIds = new Set();
+  (board.outfits||[]).forEach(function(o){(o.items||[]).forEach(function(id){capIds.add(id);});});
+  _builderCapsuleIds = capIds.size > 0 ? capIds : null;
   var existing = document.getElementById('anchor-picker-overlay');
   if (existing) existing.remove();
 
@@ -7244,7 +7256,11 @@ async function generateOutfitFromAnchor(boardId, anchorId, anchorName) {
 
   showToast('❖ Outfit samenstellen voor ' + anchorName + '...');
 
-  var allItems = getAllItems().filter(function(i){ return !deletedItemIds.has(i.id) && i.id !== anchorId; });
+  var allItems = getAllItems().filter(function(i){
+    if (deletedItemIds.has(i.id) || i.id === anchorId) return false;
+    if (_builderCapsuleIds && _builderCapsuleIds.size > 0) return _builderCapsuleIds.has(i.id);
+    return true;
+  });
   var wardrobeList = allItems.map(function(i){
     var k = getTag(i.id,'kleur')||''; var s = getStructuurKlasse(i.id)||'';
     return i.name + (k?' ['+k+']':'') + (s?' ['+s+']':'');
