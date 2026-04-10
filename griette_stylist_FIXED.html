@@ -4173,6 +4173,15 @@ function generateSuggestions(append = false) {
     const loadingEl = document.getElementById('loading-more');
     if (loadingEl) loadingEl.remove();
 
+    // Local getPool for this function
+    const occasionIds2 = (occasionRules[activeOccasion] || {});
+    function getPool(cat) {
+      const catItems2 = allItems.filter(i => i.cat === cat);
+      const inList2 = catItems2.filter(i => (occasionIds2[cat]||[]).includes(i.id));
+      const rest2 = catItems2.filter(i => !(occasionIds2[cat]||[]).includes(i.id));
+      return [...inList2, ...rest2];
+    }
+
     const dressIds = getAllItems().filter(function(i){return i.cat==='jurken';}).map(function(i){return i.id;});
     const _month = new Date().getMonth() + 1;
     const _isWinter = _month <= 2 || _month >= 11;
