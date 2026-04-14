@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Stijl Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#1C1612}
+body{font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:32px;padding-top:calc(env(safe-area-inset-top,20px)+32px)}
+.logo{font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:rgba(240,212,192,.7);margin-bottom:44px}
+.title{font-family:'Cormorant Garamond',serif;font-size:48px;font-style:italic;font-weight:300;color:white;text-align:center;line-height:1.1;margin-bottom:10px}
+.title em{color:#C4714A;font-style:italic}
+.sub{font-size:13px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:52px;font-weight:300;line-height:1.7;max-width:260px}
+input{width:100%;max-width:300px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:14px;padding:18px 20px;font-family:'Cormorant Garamond',serif;font-size:24px;color:white;text-align:center;outline:none;letter-spacing:.14em;margin-bottom:12px;display:block;font-weight:300;transition:border-color .2s;-webkit-appearance:none}
+input:focus{border-color:#C4714A}
+input::placeholder{font-family:'DM Sans',sans-serif;font-size:14px;letter-spacing:.04em;color:rgba(255,255,255,.25);font-weight:300}
+button{width:100%;max-width:300px;height:54px;border-radius:100px;background:#C4714A;color:white;border:none;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;letter-spacing:.02em;-webkit-appearance:none;appearance:none;display:block;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent}
+button:active{background:#A85A38}
+.err{font-size:13px;color:#E88080;text-align:center;margin-top:14px;min-height:20px;font-weight:400}
+.footer{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px)+20px);font-size:10px;color:rgba(255,255,255,.18);letter-spacing:.12em;text-transform:uppercase;text-align:center}
+</style>
+</head>
+<body>
+<div class="logo">Stijl Studio &middot; Priv&eacute; Beta</div>
+<div class="title">Jouw<br><em>stijl</em> begint<br>hier.</div>
+<div class="sub">Je hebt een toegangscode nodig. Geen code? Stuur een berichtje naar Griette.</div>
+<input id="code" type="text" placeholder="Jouw code" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+<button id="btn" type="button">Toegang &rarr;</button>
+<div class="err" id="err"></div>
+<div class="footer">&copy; 2025 Stijl Studio &middot; Vertrouwelijk</div>
+
+<script>
+var VALID = {
+  'SS-GRIET': true,
+  'SS-EVA25': true,
+  'SS-INEZ25': true,
+  'SS-BETA4': false,
+  'SS-BETA5': false
+};
+
+function go() {
+  var code = document.getElementById('code').value.trim().toUpperCase();
+  var err = document.getElementById('err');
+  err.textContent = '';
+  if (!code) { err.textContent = 'Vul je code in.'; return; }
+  if (!VALID.hasOwnProperty(code)) { err.textContent = 'Ongeldige code. Probeer opnieuw.'; return; }
+  if (!VALID[code]) { err.textContent = 'Deze code is nog niet actief.'; return; }
+  try { localStorage.setItem('ss-code', code); } catch(e) {}
+  document.getElementById('btn').textContent = 'Bezig...';
+  window.location.href = 'griette_stylist_BETA.html';
+}
+
+document.getElementById('btn').addEventListener('click', go);
+document.getElementById('code').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') go();
+});
+
+// Als al ingelogd, direct doorsturen
+try {
+  var saved = localStorage.getItem('ss-code');
+  if (saved && VALID[saved]) {
+    window.location.href = 'griette_stylist_BETA.html';
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
