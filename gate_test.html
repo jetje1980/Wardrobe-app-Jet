@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gate Test v3</title>
+<style>
+body{margin:0;background:#1C1612;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif}
+.box{background:#2A1E14;border-radius:16px;padding:32px;max-width:320px;width:100%;text-align:center}
+h2{color:white;margin:0 0 20px}
+input{width:100%;padding:14px;border-radius:8px;border:none;font-size:18px;text-align:center;background:rgba(255,255,255,.1);color:white;box-sizing:border-box;margin-bottom:12px;letter-spacing:.1em}
+input::placeholder{color:rgba(255,255,255,.3);font-size:14px}
+button{width:100%;padding:16px;border-radius:100px;background:#C4714A;color:white;border:none;font-size:16px;font-weight:600;cursor:pointer}
+#msg{color:#E88080;margin-top:10px;font-size:13px;min-height:20px}
+#ok{color:#4A9E6A;margin-top:10px;font-size:14px;display:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Stijl Studio</h2>
+  <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:20px">Voer je toegangscode in</p>
+  <input id="code" type="text" placeholder="Jouw code" autocapitalize="characters">
+  <button id="btn">Toegang</button>
+  <div id="msg"></div>
+  <div id="ok">CODE WERKT! Ga naar de echte app.</div>
+</div>
+<script>
+var VALID = {'SS-GRIET':1,'SS-EVA25':1,'SS-INEZ25':1,'SS-BETA4':1,'SS-BETA5':1};
+document.getElementById('btn').addEventListener('click', function() {
+  var code = document.getElementById('code').value.trim().toUpperCase();
+  document.getElementById('msg').textContent = '';
+  if (!code) { document.getElementById('msg').textContent = 'Vul een code in'; return; }
+  if (!VALID[code]) { document.getElementById('msg').textContent = 'Ongeldige code: ' + code; return; }
+  try { localStorage.setItem('ss-code', code); } catch(e) {}
+  document.getElementById('ok').style.display = 'block';
+  document.getElementById('msg').textContent = '';
+  setTimeout(function() {
+    window.location.href = 'griette_stylist_BETA.html';
+  }, 1500);
+});
+document.getElementById('code').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('btn').click();
+});
+</script>
+</body>
+</html>
